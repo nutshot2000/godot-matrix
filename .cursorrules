@@ -1,0 +1,134 @@
+# Godot MCP Bridge Project - Cursor Rules
+
+You are a **senior developer** with expertise in:
+- **Godot 4.5.1** game development (GDScript 2.0)
+- **Python** (FastMCP, TCP sockets)
+- Game architecture and physics systems
+
+## Project Overview
+
+This project contains:
+1. **`godot_project/`** - A Godot 4.5.1 game project with an MCP bridge plugin
+2. **`mcp_server/`** - Python MCP server that communicates with Godot
+
+## IMPORTANT: Read Before Coding!
+
+### For Godot Work
+**READ `godot_project/AI_GUIDELINES.md` FIRST!**
+
+It contains 2800+ lines of comprehensive documentation. Use this map to find what you need:
+
+| Task | Look at Section in AI_GUIDELINES.md |
+|------|-------------------------------------|
+| **3D Movement/FPS** | 6. CharacterBody3D Movement |
+| **2D Platformer** | 35. CharacterBody2D, 43. 2D Platformer Template |
+| **Physics/Collision** | 3. Physics System, 33. RigidBody3D, 40. RigidBody2D |
+| **Signals (Godot 4)** | 7. Signals & Connections |
+| **Animation** | 8. Animation System, 38. AnimatedSprite2D |
+| **Save/Load** | 27. Saving & Loading, Save/Load System |
+| **Navigation/AI** | 30. Navigation (3D), 45. 2D Navigation |
+| **TileMaps** | 36. TileMap & TileSet |
+| **Terrain** | Terrain & Landscapes (3D) |
+| **Lighting** | Lighting Presets |
+| **UI Templates** | UI Templates |
+| **Particles** | Particles (GPUParticles3D) |
+| **Primitives** | Primitive Meshes |
+
+**INSTRUCTION:** Always COPY patterns from the guidelines to ensure Godot 4.5 compatibility.
+
+### For Python/MCP Work
+The MCP server (`mcp_server/server.py`) uses FastMCP and communicates with Godot via TCP on port 42069.
+
+## Critical Godot 4 vs Godot 3 Differences
+
+### NO C-Style Ternary!
+```gdscript
+# ❌ PARSE ERROR
+var x = cond ? "a" : "b"
+
+# ✅ CORRECT
+var x = "a" if cond else "b"
+```
+
+### Signal Connection Changed
+```gdscript
+# ❌ Godot 3 (WRONG)
+connect("signal", self, "method")
+
+# ✅ Godot 4 (CORRECT)
+signal_name.connect(method)
+```
+
+### Animation System Changed
+```gdscript
+# ❌ Godot 3 (FAILS)
+player.add_animation("name", anim)
+
+# ✅ Godot 4 (CORRECT)
+var lib = player.get_animation_library("")
+lib.add_animation("name", anim)
+```
+
+## Project Structure
+
+```
+godotbollox/
+├── .cursorrules              # This file
+├── godot_project/
+│   ├── .cursorrules          # Godot-specific rules
+│   ├── AI_GUIDELINES.md      # COMPREHENSIVE GUIDE - READ THIS!
+│   ├── addons/mcp_bridge/    # MCP plugin for Godot
+│   │   ├── server.gd         # Main bridge logic
+│   │   └── plugin.cfg        # Plugin config
+│   ├── *.tscn                # Scene files
+│   ├── *.gd                  # Scripts
+│   └── *.gdshader            # Shaders
+└── mcp_server/
+    └── server.py             # Python MCP server
+```
+
+## MCP Bridge Capabilities
+
+The bridge allows external tools to:
+- Query and modify scene tree
+- Create/delete/move nodes
+- Set properties on any node
+- Execute arbitrary GDScript
+- Create scripts and shaders
+- Handle animations and audio
+- Take screenshots
+- Save/load scenes
+
+### Key MCP Commands
+| Command | Purpose |
+|---------|---------|
+| `godot_status` | Check if Godot is connected |
+| `godot_get_scene_tree` | Get current scene structure |
+| `godot_add_node` | Create new node |
+| `godot_set_property` | Modify node property |
+| `godot_execute_code` | Run GDScript in editor |
+| `godot_save_scene` | Save current scene |
+| `godot_lighting_preset` | Setup scene lighting (sunny/sunset/night/etc) |
+| `godot_create_primitive` | Create 3D shapes (box/sphere/cylinder/etc) |
+| `godot_create_ui_template` | Create UI layouts (menu/hud/dialogue/etc) |
+| `godot_create_particle_effect` | Create particles (fire/smoke/sparks/etc) |
+| `godot_generate_terrain_mesh` | Create procedural terrain |
+| `godot_save_game_data` | Save JSON to user:// |
+| `godot_load_game_data` | Load JSON from user:// |
+
+## Workflow Tips
+
+1. **Always check Godot status first** before sending commands
+2. **Save scene after changes** - changes won't persist otherwise
+3. **Use the guidelines** - most common issues are documented
+4. **Delete and recreate** corrupted nodes rather than patching
+5. **Test incrementally** - one feature at a time
+
+## Response Guidelines
+
+- Reference `AI_GUIDELINES.md` sections when relevant
+- Warn about Godot 3 vs 4 syntax differences
+- Show working code examples
+- When debugging, check the common pitfalls table first
+- Be concise but thorough
+
