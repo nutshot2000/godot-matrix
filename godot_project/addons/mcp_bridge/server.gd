@@ -281,6 +281,7 @@ func _generate_terrain_mesh(params: Dictionary) -> Dictionary:
 	# 3. Create Node Structure
 	var body = StaticBody3D.new()
 	body.name = name
+	body.set_meta("_edit_group_", true)
 	parent.add_child(body)
 	body.owner = root
 	
@@ -1089,6 +1090,7 @@ func _create_primitive(params: Dictionary) -> Dictionary:
 	if with_collision:
 		var body = StaticBody3D.new()
 		body.name = name
+		body.set_meta("_edit_group_", true)
 		parent.add_child(body)
 		body.owner = root
 		
@@ -2181,6 +2183,7 @@ func _spawn_fps_controller(params: Dictionary) -> Dictionary:
 		return {"error": "CharacterBody3D not available in this project"}
 	var player = ClassDB.instantiate("CharacterBody3D")
 	player.name = name
+	player.set_meta("_edit_group_", true)
 	parent.add_child(player)
 	player.owner = root
 	
@@ -2227,6 +2230,7 @@ func _create_health_bar_ui(params: Dictionary) -> Dictionary:
 	var canvas = CanvasLayer.new()
 	canvas.name = bar_name
 	canvas.layer = 10  # High layer to be on top
+	canvas.set_meta("_edit_group_", true)
 	parent.add_child(canvas)
 	canvas.owner = root
 	
@@ -2268,6 +2272,7 @@ func _spawn_spinning_pickup(params: Dictionary) -> Dictionary:
 	# Otherwise, create a complete pickup from scratch
 	var area = Area3D.new()
 	area.name = pickup_name
+	area.set_meta("_edit_group_", true)
 	parent.add_child(area)
 	area.owner = root
 	
@@ -2343,6 +2348,7 @@ func _create_trigger_area(params: Dictionary) -> Dictionary:
 	area.name = area_name
 	area.monitoring = monitoring
 	area.monitorable = true
+	area.set_meta("_edit_group_", true)
 	parent.add_child(area)
 	area.owner = root
 	
@@ -2419,6 +2425,7 @@ func _create_rigidbody(params: Dictionary) -> Dictionary:
 	var body = RigidBody3D.new()
 	body.name = name
 	body.mass = mass
+	body.set_meta("_edit_group_", true)
 	parent.add_child(body)
 	body.owner = root
 	
