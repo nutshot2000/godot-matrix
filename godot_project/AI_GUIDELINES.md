@@ -723,6 +723,21 @@ func _on_body_entered(body):
 
 ## MCP Bridge Tooling
 
+### 📚 Documentation Lookup Tools (USE THESE FIRST!)
+The MCP server includes built-in Godot documentation lookup. **Always check docs before implementing features!**
+
+| Tool | Usage | Example |
+|------|-------|---------|
+| `godot_docs` | Look up a specific class | `godot_docs("MeshInstance3D")` |
+| `godot_docs_search` | Search docs for a topic | `godot_docs_search("collision layers")` |
+
+**When to use:**
+- Before using any unfamiliar class
+- When something isn't working as expected
+- To check for async behavior (like `NoiseTexture2D.changed`)
+- To verify Godot 4 vs Godot 3 API differences
+- To find correct signal names and parameters
+
 ### Overview
 The `server.gd` plugin in `addons/mcp_bridge/` enables external tools to control Godot via TCP.
 

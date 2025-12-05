@@ -136,7 +136,7 @@ Save the player's score and level to a JSON file
 
 ---
 
-## 🛠️ Available Tools (68 Total)
+## 🛠️ Available Tools (70 Total)
 
 <details>
 <summary><b>Scene Management (12)</b></summary>
@@ -248,6 +248,16 @@ Save the player's score and level to a JSON file
 | `godot_setup_input_map` | Configure inputs |
 | `godot_set_project_setting` | Modify settings |
 | `godot_get_errors` | Get recent errors |
+
+</details>
+
+<details>
+<summary><b>📚 Documentation Lookup (2)</b></summary>
+
+| Tool | Description |
+|------|-------------|
+| `godot_docs` | Look up class documentation (e.g., "MeshInstance3D") |
+| `godot_docs_search` | Search docs for a topic (e.g., "collision layers") |
 
 </details>
 

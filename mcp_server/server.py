@@ -1,6 +1,15 @@
 import socket
 import json
+import re
 from mcp.server.fastmcp import FastMCP
+
+# Optional imports for doc lookup (graceful fallback if not installed)
+try:
+    import requests
+    from bs4 import BeautifulSoup
+    DOCS_AVAILABLE = True
+except ImportError:
+    DOCS_AVAILABLE = False
 
 # Initialize FastMCP server
 mcp = FastMCP("Godot Integration")
@@ -1165,6 +1174,147 @@ def godot_load_game_data(filename: str = "save.json") -> str:
     if "error" in response:
         return f"Error: {response['error']}"
     return json.dumps(response, indent=2)
+
+# ============ Godot Documentation Lookup ============
+
+GODOT_DOCS_BASE = "https://docs.godotengine.org/en/stable/classes/class_{}.html"
+GODOT_DOCS_SEARCH = "https://docs.godotengine.org/en/stable/search.html?q={}"
+
+@mcp.tool()
+def godot_docs(class_name: str) -> str:
+    """
+    Look up official Godot documentation for a class.
+    Args:
+        class_name: Name of the Godot class (e.g., "MeshInstance3D", "Area3D", "CharacterBody3D")
+    Returns:
+        Summary of the class including description, key properties, methods, and signals.
+    """
+    if not DOCS_AVAILABLE:
+        return "Error: requests and beautifulsoup4 not installed. Run: pip install requests beautifulsoup4"
+    
+    # Normalize class name (e.g., "MeshInstance3D" -> "meshinstance3d")
+    class_lower = class_name.lower().replace(" ", "")
+    url = GODOT_DOCS_BASE.format(class_lower)
+    
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 404:
+            return f"Class '{class_name}' not found in Godot documentation. Check spelling."
+        response.raise_for_status()
+    except requests.RequestException as e:
+        return f"Error fetching docs: {e}"
+    
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    result = []
+    result.append(f"# {class_name} - Official Godot Documentation")
+    result.append(f"Source: {url}\n")
+    
+    # Get inheritance chain
+    inherits = soup.find('p', string=re.compile(r'Inherits:'))
+    if inherits:
+        result.append(f"**{inherits.get_text().strip()}**\n")
+    
+    # Get description
+    desc_section = soup.find('section', id='description')
+    if desc_section:
+        desc_p = desc_section.find('p')
+        if desc_p:
+            result.append("## Description")
+            result.append(desc_p.get_text().strip()[:1000] + "...\n" if len(desc_p.get_text()) > 1000 else desc_p.get_text().strip() + "\n")
+    
+    # Get properties
+    props_section = soup.find('section', id='properties')
+    if props_section:
+        result.append("## Key Properties")
+        prop_table = props_section.find('table')
+        if prop_table:
+            rows = prop_table.find_all('tr')[:10]  # First 10 properties
+            for row in rows:
+                cells = row.find_all('td')
+                if len(cells) >= 2:
+                    prop_type = cells[0].get_text().strip()
+                    prop_name = cells[1].get_text().strip()
+                    result.append(f"- `{prop_name}` ({prop_type})")
+        result.append("")
+    
+    # Get methods
+    methods_section = soup.find('section', id='methods')
+    if methods_section:
+        result.append("## Key Methods")
+        method_table = methods_section.find('table')
+        if method_table:
+            rows = method_table.find_all('tr')[:15]  # First 15 methods
+            for row in rows:
+                cells = row.find_all('td')
+                if len(cells) >= 2:
+                    return_type = cells[0].get_text().strip()
+                    method_sig = cells[1].get_text().strip()
+                    result.append(f"- `{method_sig}` → {return_type}")
+        result.append("")
+    
+    # Get signals
+    signals_section = soup.find('section', id='signals')
+    if signals_section:
+        result.append("## Signals")
+        signal_items = signals_section.find_all('dt', class_='sig')[:8]  # First 8 signals
+        for sig in signal_items:
+            result.append(f"- `{sig.get_text().strip()}`")
+        result.append("")
+    
+    if len(result) <= 3:
+        return f"Documentation found but could not parse content. Visit: {url}"
+    
+    return "\n".join(result)
+
+@mcp.tool()
+def godot_docs_search(query: str) -> str:
+    """
+    Search the Godot documentation for a topic.
+    Args:
+        query: Search query (e.g., "collision layers", "animation", "shader uniform")
+    Returns:
+        List of relevant documentation pages with descriptions.
+    """
+    if not DOCS_AVAILABLE:
+        return "Error: requests and beautifulsoup4 not installed. Run: pip install requests beautifulsoup4"
+    
+    search_url = f"https://docs.godotengine.org/en/stable/search.html?q={query.replace(' ', '+')}"
+    
+    try:
+        # The Godot docs use JavaScript for search, so we need to use the JSON API
+        api_url = f"https://docs.godotengine.org/en/stable/_/api/v2/search/?q={query.replace(' ', '+')}&project=godot&version=stable&language=en"
+        response = requests.get(api_url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+    except requests.RequestException as e:
+        return f"Error searching docs: {e}. Try: {search_url}"
+    except json.JSONDecodeError:
+        return f"Could not parse search results. Try manually: {search_url}"
+    
+    results = data.get('results', [])
+    if not results:
+        return f"No results found for '{query}'. Try different keywords or visit: {search_url}"
+    
+    output = [f"# Search Results for '{query}'", f"Found {len(results)} results:\n"]
+    
+    for i, item in enumerate(results[:10], 1):  # Top 10 results
+        title = item.get('title', 'Untitled')
+        path = item.get('path', '')
+        # Extract highlights/description
+        highlights = item.get('highlights', {})
+        content = highlights.get('content', [''])[0] if highlights.get('content') else ''
+        
+        output.append(f"**{i}. {title}**")
+        if path:
+            output.append(f"   URL: https://docs.godotengine.org/en/stable/{path}")
+        if content:
+            # Clean up highlight markers
+            clean_content = re.sub(r'<[^>]+>', '', content)[:200]
+            output.append(f"   {clean_content}...")
+        output.append("")
+    
+    return "\n".join(output)
 
 if __name__ == "__main__":
     mcp.run()
