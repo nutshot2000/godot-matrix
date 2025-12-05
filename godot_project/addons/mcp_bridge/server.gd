@@ -277,6 +277,8 @@ func _generate_terrain_mesh(params: Dictionary) -> Dictionary:
 			st.set_uv(Vector2(x, z + 1))
 			st.add_vertex(v3)
 	
+	# Indexing and generating normals creates a smooth surface
+	st.index()
 	st.generate_normals()
 	var mesh = st.commit()
 	
