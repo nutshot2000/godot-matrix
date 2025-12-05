@@ -196,6 +196,10 @@ func _execute_command(cmd: Dictionary) -> Dictionary:
 			return _create_health_bar_ui(cmd.get("params", {}))
 		"spawn_spinning_pickup":
 			return _spawn_spinning_pickup(cmd.get("params", {}))
+		"create_trigger_area":
+			return _create_trigger_area(cmd.get("params", {}))
+		"create_rigidbody":
+			return _create_rigidbody(cmd.get("params", {}))
 		"generate_terrain_mesh":
 			return _generate_terrain_mesh(cmd.get("params", {}))
 		"create_terrain_material":
@@ -1024,7 +1028,7 @@ func _create_primitive(params: Dictionary) -> Dictionary:
 	var name = params.get("name", "Primitive")
 	var size = float(params.get("size", 1.0))
 	var color_str = params.get("color", "0.8,0.8,0.8")
-	var with_collision = bool(params.get("collision", false))
+	var with_collision = bool(params.get("collision", true))  # Default TRUE for game-ready objects
 	
 	var root = _get_actual_editor_root()
 	if not root: return {"error": "No active scene"}
@@ -2232,22 +2236,241 @@ func _create_health_bar_ui(params: Dictionary) -> Dictionary:
 
 func _spawn_spinning_pickup(params: Dictionary) -> Dictionary:
 	var parent_path = params.get("parent_path", ".")
-	var scene_path = params.get("scene_path", "res://coin.tscn")
+	var scene_path = params.get("scene_path", "")
+	var pickup_name = params.get("name", "Pickup")
 	var root = _get_actual_editor_root()
 	if not root:
 		return {"error": "No active scene"}
 	var parent = root.get_node_or_null(parent_path) if parent_path != "." else root
 	if not parent:
 		return {"error": "Parent not found"}
-	if not FileAccess.file_exists(scene_path):
-		return {"error": "Pickup scene not found: " + scene_path}
-	var packed = load(scene_path)
-	if not packed:
-		return {"error": "Failed to load pickup scene"}
-	var node = packed.instantiate()
-	parent.add_child(node)
-	node.owner = root
-	return {"result": "Spinning pickup spawned", "path": str(node.get_path())}
+	
+	# If scene_path provided and exists, use it
+	if scene_path != "" and FileAccess.file_exists(scene_path):
+		var packed = load(scene_path)
+		if packed:
+			var node = packed.instantiate()
+			parent.add_child(node)
+			node.owner = root
+			return {"result": "Pickup spawned from scene", "path": str(node.get_path())}
+	
+	# Otherwise, create a complete pickup from scratch
+	var area = Area3D.new()
+	area.name = pickup_name
+	parent.add_child(area)
+	area.owner = root
+	
+	# Add collision shape (required for Area3D to detect anything!)
+	var col = CollisionShape3D.new()
+	col.name = "CollisionShape3D"
+	var sphere_shape = SphereShape3D.new()
+	sphere_shape.radius = 0.5
+	col.shape = sphere_shape
+	area.add_child(col)
+	col.owner = root
+	
+	# Add visual mesh
+	var mesh_inst = MeshInstance3D.new()
+	mesh_inst.name = "Mesh"
+	var cylinder = CylinderMesh.new()
+	cylinder.top_radius = 0.3
+	cylinder.bottom_radius = 0.3
+	cylinder.height = 0.1
+	mesh_inst.mesh = cylinder
+	mesh_inst.rotation_degrees = Vector3(90, 0, 0)  # Lay flat like a coin
+	area.add_child(mesh_inst)
+	mesh_inst.owner = root
+	
+	# Add gold material
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.84, 0.0)  # Gold
+	mat.metallic = 0.8
+	mat.roughness = 0.3
+	mesh_inst.material_override = mat
+	
+	# Add spinning animation via AnimationPlayer
+	var anim_player = AnimationPlayer.new()
+	anim_player.name = "AnimationPlayer"
+	area.add_child(anim_player)
+	anim_player.owner = root
+	
+	# Create spin animation
+	var anim = Animation.new()
+	anim.length = 2.0
+	anim.loop_mode = Animation.LOOP_LINEAR
+	var track = anim.add_track(Animation.TYPE_VALUE)
+	anim.track_set_path(track, NodePath(".:rotation_degrees"))
+	anim.track_insert_key(track, 0.0, Vector3(0, 0, 0))
+	anim.track_insert_key(track, 2.0, Vector3(0, 360, 0))
+	
+	var lib = AnimationLibrary.new()
+	lib.add_animation("spin", anim)
+	anim_player.add_animation_library("", lib)
+	anim_player.play("spin")
+	
+	return {"result": "Pickup created with collision, mesh, and spin animation", "path": str(area.get_path())}
+
+func _create_trigger_area(params: Dictionary) -> Dictionary:
+	"""Create an Area3D with CollisionShape3D ready to detect bodies."""
+	var parent_path = params.get("parent_path", ".")
+	var name = params.get("name", "TriggerArea")
+	var shape_type = params.get("shape", "box")  # box, sphere, capsule, cylinder
+	var size = float(params.get("size", 2.0))
+	var monitoring = bool(params.get("monitoring", true))
+	
+	var root = _get_actual_editor_root()
+	if not root: return {"error": "No active scene"}
+	var parent = root.get_node_or_null(parent_path) if parent_path != "." else root
+	if not parent: return {"error": "Parent not found"}
+	
+	# Create Area3D
+	var area = Area3D.new()
+	area.name = name
+	area.monitoring = monitoring
+	area.monitorable = true
+	parent.add_child(area)
+	area.owner = root
+	
+	# Create CollisionShape3D with shape
+	var col = CollisionShape3D.new()
+	col.name = "CollisionShape3D"
+	
+	var shape: Shape3D
+	match shape_type:
+		"box":
+			var box = BoxShape3D.new()
+			box.size = Vector3(size, size, size)
+			shape = box
+		"sphere":
+			var sphere = SphereShape3D.new()
+			sphere.radius = size / 2.0
+			shape = sphere
+		"capsule":
+			var capsule = CapsuleShape3D.new()
+			capsule.radius = size / 3.0
+			capsule.height = size
+			shape = capsule
+		"cylinder":
+			var cyl = CylinderShape3D.new()
+			cyl.radius = size / 2.0
+			cyl.height = size
+			shape = cyl
+		_:
+			var box = BoxShape3D.new()
+			box.size = Vector3(size, size, size)
+			shape = box
+	
+	col.shape = shape
+	area.add_child(col)
+	col.owner = root
+	
+	# Add debug visualization (optional mesh)
+	var mesh_inst = MeshInstance3D.new()
+	mesh_inst.name = "DebugMesh"
+	var box_mesh = BoxMesh.new()
+	box_mesh.size = Vector3(size, size, size) if shape_type == "box" else Vector3(size, size, size)
+	mesh_inst.mesh = box_mesh
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.2, 0.8, 0.2, 0.3)  # Green transparent
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mesh_inst.material_override = mat
+	area.add_child(mesh_inst)
+	mesh_inst.owner = root
+	
+	return {"result": "Trigger area created with collision shape", "path": str(area.get_path()), "note": "Connect body_entered/body_exited signals to detect objects"}
+
+func _create_rigidbody(params: Dictionary) -> Dictionary:
+	"""Create a RigidBody3D with CollisionShape3D and mesh."""
+	var parent_path = params.get("parent_path", ".")
+	var name = params.get("name", "RigidBody")
+	var shape_type = params.get("shape", "box")  # box, sphere, capsule, cylinder
+	var size = float(params.get("size", 1.0))
+	var mass = float(params.get("mass", 1.0))
+	var color_str = params.get("color", "0.6,0.6,0.6")
+	
+	var root = _get_actual_editor_root()
+	if not root: return {"error": "No active scene"}
+	var parent = root.get_node_or_null(parent_path) if parent_path != "." else root
+	if not parent: return {"error": "Parent not found"}
+	
+	# Parse color
+	var color = Color(0.6, 0.6, 0.6)
+	var color_parts = color_str.split(",")
+	if color_parts.size() >= 3:
+		color = Color(float(color_parts[0]), float(color_parts[1]), float(color_parts[2]))
+	
+	# Create RigidBody3D
+	var body = RigidBody3D.new()
+	body.name = name
+	body.mass = mass
+	parent.add_child(body)
+	body.owner = root
+	
+	# Create CollisionShape3D
+	var col = CollisionShape3D.new()
+	col.name = "CollisionShape3D"
+	
+	var col_shape: Shape3D
+	var mesh: Mesh
+	
+	match shape_type:
+		"box":
+			var box_shape = BoxShape3D.new()
+			box_shape.size = Vector3(size, size, size)
+			col_shape = box_shape
+			var box_mesh = BoxMesh.new()
+			box_mesh.size = Vector3(size, size, size)
+			mesh = box_mesh
+		"sphere":
+			var sphere_shape = SphereShape3D.new()
+			sphere_shape.radius = size / 2.0
+			col_shape = sphere_shape
+			var sphere_mesh = SphereMesh.new()
+			sphere_mesh.radius = size / 2.0
+			sphere_mesh.height = size
+			mesh = sphere_mesh
+		"capsule":
+			var cap_shape = CapsuleShape3D.new()
+			cap_shape.radius = size / 3.0
+			cap_shape.height = size
+			col_shape = cap_shape
+			var cap_mesh = CapsuleMesh.new()
+			cap_mesh.radius = size / 3.0
+			cap_mesh.height = size
+			mesh = cap_mesh
+		"cylinder":
+			var cyl_shape = CylinderShape3D.new()
+			cyl_shape.radius = size / 2.0
+			cyl_shape.height = size
+			col_shape = cyl_shape
+			var cyl_mesh = CylinderMesh.new()
+			cyl_mesh.top_radius = size / 2.0
+			cyl_mesh.bottom_radius = size / 2.0
+			cyl_mesh.height = size
+			mesh = cyl_mesh
+		_:
+			var box_shape = BoxShape3D.new()
+			box_shape.size = Vector3(size, size, size)
+			col_shape = box_shape
+			var box_mesh = BoxMesh.new()
+			box_mesh.size = Vector3(size, size, size)
+			mesh = box_mesh
+	
+	col.shape = col_shape
+	body.add_child(col)
+	col.owner = root
+	
+	# Create MeshInstance3D
+	var mesh_inst = MeshInstance3D.new()
+	mesh_inst.name = "Mesh"
+	mesh_inst.mesh = mesh
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = color
+	mesh_inst.material_override = mat
+	body.add_child(mesh_inst)
+	mesh_inst.owner = root
+	
+	return {"result": "RigidBody3D created with collision and mesh", "path": str(body.get_path())}
 
 # ============ NEW: UI Anchors ============
 

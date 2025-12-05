@@ -1079,10 +1079,10 @@ def godot_create_primitive(
     name: str = "Primitive",
     size: float = 1.0,
     color: str = "0.8,0.8,0.8",
-    collision: bool = False
+    collision: bool = True
 ) -> str:
     """
-    Create a 3D primitive mesh with optional collision.
+    Create a 3D primitive mesh with collision (game-ready by default).
     Args:
         shape: Primitive type - one of:
             - "box": Cube/box mesh
@@ -1096,7 +1096,7 @@ def godot_create_primitive(
         name: Name for the node
         size: Size of the primitive (units)
         color: RGB color as "r,g,b" (0-1 range), e.g. "1.0,0.5,0.0" for orange
-        collision: If true, wraps in StaticBody3D with collision shape
+        collision: If true (default), wraps in StaticBody3D with collision shape
     """
     response = send_to_godot("create_primitive", {
         "shape": shape,
@@ -1132,6 +1132,71 @@ def godot_create_ui_template(
         "template": template,
         "parent_path": parent_path,
         "name": name
+    })
+    if "error" in response:
+        return f"Error: {response['error']}"
+    return json.dumps(response, indent=2)
+
+@mcp.tool()
+def godot_create_trigger_area(
+    parent_path: str = ".",
+    name: str = "TriggerArea",
+    shape: str = "box",
+    size: float = 2.0
+) -> str:
+    """
+    Create an Area3D with CollisionShape3D ready to detect bodies.
+    Perfect for pickups, damage zones, checkpoints, or any trigger.
+    
+    Args:
+        parent_path: Parent node path
+        name: Name for the trigger area
+        shape: Collision shape type - "box", "sphere", "capsule", "cylinder"
+        size: Size of the trigger area
+    
+    Note: Connect body_entered/body_exited signals to detect player or objects.
+    The Area3D comes with collision shape already configured!
+    """
+    response = send_to_godot("create_trigger_area", {
+        "parent_path": parent_path,
+        "name": name,
+        "shape": shape,
+        "size": size
+    })
+    if "error" in response:
+        return f"Error: {response['error']}"
+    return json.dumps(response, indent=2)
+
+@mcp.tool()
+def godot_create_rigidbody(
+    parent_path: str = ".",
+    name: str = "RigidBody",
+    shape: str = "box",
+    size: float = 1.0,
+    mass: float = 1.0,
+    color: str = "0.6,0.6,0.6"
+) -> str:
+    """
+    Create a complete RigidBody3D with collision shape and mesh.
+    Perfect for physics objects like crates, barrels, balls, etc.
+    
+    Args:
+        parent_path: Parent node path
+        name: Name for the rigid body
+        shape: Shape type - "box", "sphere", "capsule", "cylinder"
+        size: Size of the object
+        mass: Mass in kg (affects physics behavior)
+        color: RGB color as "r,g,b" (0-1 range)
+    
+    The RigidBody3D comes with collision shape AND visual mesh!
+    """
+    response = send_to_godot("create_rigidbody", {
+        "parent_path": parent_path,
+        "name": name,
+        "shape": shape,
+        "size": size,
+        "mass": mass,
+        "color": color
     })
     if "error" in response:
         return f"Error: {response['error']}"
