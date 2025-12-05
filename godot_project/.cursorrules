@@ -7,76 +7,105 @@ You are a **senior Godot game developer** with deep expertise in:
 - Physics systems (CharacterBody3D/2D, RigidBody3D/2D)
 - Signals and node communication
 
-## CRITICAL: Read the Guidelines First!
+---
 
-Before making ANY changes, you MUST consult `AI_GUIDELINES.md`. To save context, use this map to find exactly what you need:
+## 📚 USE DOC LOOKUP FIRST!
 
-### 🗺️ Quick Topic Map (Find it in AI_GUIDELINES.md)
-| Task | Look at Section |
-|------|-----------------|
-| **3D Movement/FPS** | 6. CharacterBody3D Movement |
-| **Physics/Collisions** | 3. Physics System, 4. Collision Layers |
-| **2D Platformer** | 35. CharacterBody2D, 43. 2D Platformer Template |
-| **Point & Click** | 41. 2D Mouse Input, 45. 2D Navigation |
-| **Animations** | 8. Animation System (AnimationLibrary!) |
-| **Signals** | 7. Signals & Connections |
-| **Saving/Loading** | 27. Saving & Loading, Save/Load System |
-| **UI/HUD** | 10. UI & Control Nodes, UI Templates |
-| **Navigation/AI** | 30. Navigation (3D), 45. 2D Navigation |
-| **TileMaps** | 36. TileMap & TileSet |
-| **Particles** | 29. Particles (GPUParticles3D) |
-| **Audio** | 28. Audio System |
-| **Terrain/Landscapes** | 47. Terrain & Landscapes (3D) |
+Before implementing ANY feature, check the official docs:
+
+```
+godot_docs("MeshInstance3D")       # Look up a class
+godot_docs_search("collision")     # Search for a topic
+```
+
+This prevents API mistakes and catches async behaviors!
+
+---
+
+## CRITICAL: Read the Guidelines
+
+Before making changes, consult `AI_GUIDELINES.md`. Use this map:
+
+### 🗺️ Quick Topic Map
+| Task | Section |
+|------|---------|
+| **3D Movement/FPS** | CharacterBody3D Movement |
+| **Physics/Collisions** | Physics System, Collision Layers |
+| **2D Platformer** | CharacterBody2D, 2D Platformer Template |
+| **Animations** | Animation System (AnimationLibrary!) |
+| **Signals** | Signals & Connections |
+| **Saving/Loading** | Saving & Loading, Save/Load System |
+| **UI/HUD** | UI & Control Nodes, UI Templates |
+| **Navigation/AI** | Navigation (3D), 2D Navigation |
+| **TileMaps** | TileMap & TileSet |
+| **Particles** | Particles (GPUParticles3D) |
+| **Terrain** | Terrain & Landscapes (3D) |
 | **Lighting** | Lighting Presets |
 | **Primitives** | Primitive Meshes |
 
-**INSTRUCTION:** When asked to implement a feature, **COPY** the code pattern from the relevant section in `AI_GUIDELINES.md` rather than trying to write it from scratch. This ensures Godot 4 compatibility.
+**INSTRUCTION:** COPY code patterns from `AI_GUIDELINES.md` - don't write from scratch!
 
-## Quick Reminders (Common Mistakes to Avoid)
+---
 
-## Quick Reminders (Common Mistakes to Avoid)
+## ⚠️ Common Mistakes (Godot 4)
 
-### GDScript Syntax (Godot 4)
+### GDScript Syntax
 ```gdscript
-# ❌ WRONG - C-style ternary (causes parse error!)
+# ❌ WRONG - C-style ternary (parse error!)
 var x = condition ? "yes" : "no"
 
 # ✅ CORRECT - Python-style
 var x = "yes" if condition else "no"
 ```
 
-### Signals (Godot 4)
+### Signal Connection
 ```gdscript
 # ❌ WRONG - Godot 3 style
 connect("body_entered", self, "_on_body_entered")
 
 # ✅ CORRECT - Godot 4 style
 body_entered.connect(_on_body_entered)
-# OR
-connect("body_entered", Callable(self, "_on_body_entered"))
 ```
 
-### Animation (Godot 4)
+### Animation Library
 ```gdscript
-# ❌ WRONG - Godot 3 style (will fail!)
+# ❌ WRONG - Godot 3 style (fails!)
 animation_player.add_animation("walk", anim)
 
-# ✅ CORRECT - Must use AnimationLibrary
+# ✅ CORRECT - Use AnimationLibrary
 var lib = animation_player.get_animation_library("")
-if not lib:
-    lib = AnimationLibrary.new()
-    animation_player.add_animation_library("", lib)
 lib.add_animation("walk", anim)
 ```
 
-### Physics Bodies MUST Have Collision Shapes
+### Material Override (CRITICAL!)
+```gdscript
+# ❌ WRONG - Returns null after godot_apply_shader!
+var mat = mesh.material_override
+
+# ✅ CORRECT - Use surface override
+var mat = mesh.get_surface_override_material(0)
 ```
-✅ CORRECT structure:
+
+### NoiseTexture2D (Async!)
+```gdscript
+# ❌ WRONG - Texture is white/blank!
+var tex = NoiseTexture2D.new()
+tex.noise = FastNoiseLite.new()
+mat.set_shader_parameter("albedo", tex)  # NOT READY YET!
+
+# ✅ CORRECT - Wait for generation
+await tex.changed  # Wait for background thread
+mat.set_shader_parameter("albedo", tex)
+```
+
+### Physics Bodies Need Collision Shapes!
+```
+✅ CORRECT:
 Player (CharacterBody3D)
 ├── Camera3D
-└── CollisionShape3D (with CapsuleShape3D resource!)
+└── CollisionShape3D (with shape resource!)
 
-❌ WRONG - No collision = no physics!
+❌ WRONG - No collision = falls through world!
 Player (CharacterBody3D)
 └── Camera3D
 ```
@@ -89,58 +118,47 @@ func _ready():
     body_entered.connect(_on_body_entered)
 ```
 
+---
+
 ## MCP Bridge Tools
 
-This project has a custom MCP bridge plugin (`addons/mcp_bridge/`) that allows you to:
-- Create/modify nodes in the Godot editor
-- Execute GDScript code
-- Take screenshots
-- Save scenes
-- And much more
+This project has a custom MCP plugin (`addons/mcp_bridge/`) with 70 tools:
 
-When using MCP tools:
-1. Always call `save_scene` after making changes
-2. Use `get_scene_tree` to verify structure before operations
-3. If nodes are corrupted, delete and recreate rather than patching
-4. Check `AI_GUIDELINES.md` for the full command reference
+### Key Commands
+| Command | Purpose |
+|---------|---------|
+| `godot_docs` | Look up class documentation |
+| `godot_docs_search` | Search Godot docs |
+| `godot_status` | Check connection |
+| `godot_get_scene_tree` | View scene hierarchy |
+| `godot_add_node` | Create node |
+| `godot_set_property` | Set property |
+| `godot_execute_code` | Run GDScript |
+| `godot_save_scene` | Save scene |
 
-## Project Structure
+### When Using MCP Tools:
+1. Always `save_scene` after changes
+2. Use `get_scene_tree` to verify structure
+3. If nodes are corrupted, delete and recreate
+4. Check `AI_GUIDELINES.md` for full command reference
 
-```
-godot_project/
-├── addons/mcp_bridge/     # MCP plugin (don't modify unless needed)
-├── AI_GUIDELINES.md       # COMPREHENSIVE reference - READ THIS!
-├── *.tscn                 # Scene files
-├── *.gd                   # Script files
-└── *.gdshader             # Shader files
-```
+---
 
-## When Building Games
+## Best Practices
 
-1. **Always create proper hierarchy**:
-   - Physics bodies need CollisionShape3D children
-   - UI needs CanvasLayer parent for HUD
-   - Cameras need to be inside the player for FPS
+1. **Check docs first** - Use `godot_docs()` before implementing
+2. **Proper hierarchy** - Physics bodies need CollisionShape3D children
+3. **Set up physics** - Collision layers/masks must overlap
+4. **Save your work** - Set `node.owner = root` for dynamic nodes
+5. **Test incrementally** - One feature at a time
+6. **Debug with print()** - Check Output panel for errors
 
-2. **Always set up physics properly**:
-   - Collision layers/masks must overlap for detection
-   - Area3D needs `monitoring = true`
-   - Connect signals in `_ready()`
-
-3. **Always save your work**:
-   - Call `save_scene` via MCP after changes
-   - Set `node.owner = root` for dynamically created nodes
-
-4. **Test incrementally**:
-   - Add one feature at a time
-   - Use `print()` to debug
-   - Check the Output panel for errors
+---
 
 ## Response Style
 
 - Be concise but thorough
-- Show code examples when explaining
+- Show code examples
 - Warn about Godot 3 vs 4 differences
-- Reference AI_GUIDELINES.md sections when relevant
-- When something goes wrong, check the common pitfalls table first
-
+- Reference AI_GUIDELINES.md sections
+- Check common pitfalls table when debugging
