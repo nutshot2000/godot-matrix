@@ -1646,8 +1646,15 @@ func _create_audio_player(params: Dictionary) -> Dictionary:
 	if autoplay and "autoplay" in player:
 		player.autoplay = true
 	if play_now and player.has_method("play"):
-		player.play()
-	return {"result": "Audio player created", "path": str(player.get_path())}
+		if player.stream:
+			player.play()
+		else:
+			return {"result": "Audio player created (no stream - assign audio_path to play)", "path": str(player.get_path()), "warning": "No audio stream assigned"}
+	
+	var result = {"result": "Audio player created", "path": str(player.get_path())}
+	if audio_path == "":
+		result["note"] = "No audio stream assigned. Set audio_path or assign stream property to play audio."
+	return result
 
 func _play_audio(params: Dictionary) -> Dictionary:
 	var path = params.get("path", "")
@@ -1659,6 +1666,8 @@ func _play_audio(params: Dictionary) -> Dictionary:
 	var node = root.get_node_or_null(path)
 	if not node or (not (node is AudioStreamPlayer) and not (node is AudioStreamPlayer3D)):
 		return {"error": "Node is not an AudioStreamPlayer"}
+	if not node.stream:
+		return {"error": "AudioStreamPlayer has no stream assigned. Set the 'stream' property first."}
 	node.play()
 	return {"result": "Audio playing"}
 
@@ -2191,6 +2200,7 @@ func _spawn_fps_controller(params: Dictionary) -> Dictionary:
 		var cam = ClassDB.instantiate("Camera3D")
 		cam.name = "Camera3D"
 		cam.position = Vector3(0, 1.6, 0)  # Eye level
+		cam.current = true  # Make this the active camera!
 		player.add_child(cam)
 		cam.owner = root
 	
