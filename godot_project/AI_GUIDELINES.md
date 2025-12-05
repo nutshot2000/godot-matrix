@@ -597,6 +597,35 @@ button.pressed.connect(func(): print("Pressed!"))
 | Changes not saving | `owner` not set | Set `node.owner = root` |
 | Script changes not applying | Editor caching | Reload scene or toggle plugin |
 | **Shader params not working** | **Using `material_override` (null)** | **Use `get_surface_override_material(0)`** |
+| **NoiseTexture2D is white/blank** | **Texture generates async** | **Use `await texture.changed`** |
+| **Terrain/mesh stays white** | **Textures not ready** | **Wait for async generation** |
+
+### ⚠️ CRITICAL: NoiseTexture2D Generates Asynchronously
+
+`NoiseTexture2D` generates its data on a **background thread**. If you assign it immediately, it will be **blank/white** until generation completes!
+
+#### ❌ WRONG - Texture will be white:
+```gdscript
+var tex = NoiseTexture2D.new()
+tex.noise = FastNoiseLite.new()
+material.set_shader_parameter("texture", tex)  # WHITE - not ready yet!
+```
+
+#### ✅ CORRECT - Wait for generation:
+```gdscript
+var tex = NoiseTexture2D.new()
+tex.noise = FastNoiseLite.new()
+await tex.changed  # WAIT for background thread to finish
+material.set_shader_parameter("texture", tex)  # Now it has data!
+```
+
+#### In MCP `execute_code` Context:
+Since `execute_code` doesn't support `await`, NoiseTexture2D textures assigned via MCP may appear white for a few seconds until generation completes. **This is expected behavior** - the texture will appear once the background thread finishes.
+
+**Workaround:** If immediate visual feedback is needed:
+1. Create and save textures as `.tres` files first
+2. Or use pre-made placeholder textures
+3. Or accept the brief white flash while textures generate
 
 ---
 
