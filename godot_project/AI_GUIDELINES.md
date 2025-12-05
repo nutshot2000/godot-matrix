@@ -142,17 +142,17 @@ Use `Area3D` for triggers that detect overlaps but don't physically block:
 extends Area3D
 
 func _ready():
-    # CRITICAL: Enable monitoring
-    monitoring = true
-    monitorable = true
-    
-    # Connect signal
-    body_entered.connect(_on_body_entered)
+	# CRITICAL: Enable monitoring
+	monitoring = true
+	monitorable = true
+	
+	# Connect signal
+	body_entered.connect(_on_body_entered)
 
 func _on_body_entered(body: Node3D):
-    if body.name == "Player":
-        print("Player entered!")
-        queue_free()  # Remove this node
+	if body.name == "Player":
+		print("Player entered!")
+		queue_free()  # Remove this node
 ```
 
 ### Signal Types for Area3D
@@ -225,30 +225,30 @@ jump          → Space
 ### Polling Input (in `_process` or `_physics_process`)
 ```gdscript
 func _physics_process(delta):
-    if Input.is_action_pressed("move_forward"):
-        velocity.z = -SPEED
-    if Input.is_action_just_pressed("jump"):
-        velocity.y = JUMP_FORCE
+	if Input.is_action_pressed("move_forward"):
+		velocity.z = -SPEED
+	if Input.is_action_just_pressed("jump"):
+		velocity.y = JUMP_FORCE
 ```
 
 ### Event-Based Input (in `_input` or `_unhandled_input`)
 ```gdscript
 func _unhandled_input(event):
-    if event.is_action_pressed("jump"):
-        velocity.y = JUMP_FORCE
-    
-    if event is InputEventMouseMotion:
-        rotate_y(-event.relative.x * 0.005)
+	if event.is_action_pressed("jump"):
+		velocity.y = JUMP_FORCE
+	
+	if event is InputEventMouseMotion:
+		rotate_y(-event.relative.x * 0.005)
 ```
 
 ### Mouse Capture (FPS Games)
 ```gdscript
 func _ready():
-    Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _unhandled_input(event):
-    if event.is_action_pressed("ui_cancel"):  # Escape key
-        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	if event.is_action_pressed("ui_cancel"):  # Escape key
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 ```
 
 ### Getting Movement Direction
@@ -277,38 +277,38 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var camera = $Camera3D
 
 func _ready():
-    Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _unhandled_input(event):
-    if event is InputEventMouseMotion:
-        rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
-        camera.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
-        camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-90), deg_to_rad(90))
-    
-    if event.is_action_pressed("ui_cancel"):
-        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	if event is InputEventMouseMotion:
+		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
+		camera.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
+		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-90), deg_to_rad(90))
+	
+	if event.is_action_pressed("ui_cancel"):
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 func _physics_process(delta):
-    # Gravity
-    if not is_on_floor():
-        velocity.y -= gravity * delta
-    
-    # Jump
-    if Input.is_action_just_pressed("ui_accept") and is_on_floor():
-        velocity.y = JUMP_VELOCITY
-    
-    # Movement
-    var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-    var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-    
-    if direction:
-        velocity.x = direction.x * SPEED
-        velocity.z = direction.z * SPEED
-    else:
-        velocity.x = move_toward(velocity.x, 0, SPEED)
-        velocity.z = move_toward(velocity.z, 0, SPEED)
-    
-    move_and_slide()
+	# Gravity
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+	
+	# Jump
+	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+	
+	# Movement
+	var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	
+	if direction:
+		velocity.x = direction.x * SPEED
+		velocity.z = direction.z * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+		velocity.z = move_toward(velocity.z, 0, SPEED)
+	
+	move_and_slide()
 ```
 
 ### Key Methods
@@ -596,6 +596,7 @@ button.pressed.connect(func(): print("Pressed!"))
 | Duplicated nodes all change together | Shared resources | Create new resource instances |
 | Changes not saving | `owner` not set | Set `node.owner = root` |
 | Script changes not applying | Editor caching | Reload scene or toggle plugin |
+| **Shader params not working** | **Using `material_override` (null)** | **Use `get_surface_override_material(0)`** |
 
 ---
 
@@ -751,9 +752,9 @@ print("Children: ", get_children())
 ```gdscript
 var node = get_node_or_null("SomePath")
 if node:
-    print("Found: ", node.name)
+	print("Found: ", node.name)
 else:
-    print("Not found!")
+	print("Not found!")
 ```
 
 ### Inspect Physics State
@@ -767,12 +768,12 @@ print("Collision count: ", get_slide_collision_count())
 ### Signal Debugging
 ```gdscript
 func _ready():
-    # List all signals on this node
-    for sig in get_signal_list():
-        print(sig.name)
-    
-    # Check if connected
-    print("Connected: ", is_connected("body_entered", Callable(self, "_on_body_entered")))
+	# List all signals on this node
+	for sig in get_signal_list():
+		print(sig.name)
+	
+	# Check if connected
+	print("Connected: ", is_connected("body_entered", Callable(self, "_on_body_entered")))
 ```
 
 ### Common Error Messages
@@ -848,11 +849,11 @@ var score: int = 0
 var current_level: int = 1
 
 func add_score(amount: int):
-    score += amount
+	score += amount
 
 func reset_game():
-    score = 0
-    current_level = 1
+	score = 0
+	current_level = 1
 ```
 
 ### Using from Any Script
@@ -871,26 +872,26 @@ Tweens interpolate values over time - perfect for UI animations, smooth movement
 ### Basic Tween Usage
 ```gdscript
 func _ready():
-    var tween = create_tween()
-    
-    # Move node to position over 1 second
-    tween.tween_property(self, "position", Vector3(10, 0, 0), 1.0)
-    
-    # Chain animations (runs after previous finishes)
-    tween.tween_property(self, "rotation_degrees", Vector3(0, 180, 0), 0.5)
+	var tween = create_tween()
+	
+	# Move node to position over 1 second
+	tween.tween_property(self, "position", Vector3(10, 0, 0), 1.0)
+	
+	# Chain animations (runs after previous finishes)
+	tween.tween_property(self, "rotation_degrees", Vector3(0, 180, 0), 0.5)
 
 func fade_out():
-    var tween = create_tween()
-    tween.tween_property($Sprite, "modulate:a", 0.0, 0.3)
-    tween.tween_callback(queue_free)  # Delete after fade
+	var tween = create_tween()
+	tween.tween_property($Sprite, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(queue_free)  # Delete after fade
 ```
 
 ### Transition & Easing Types
 ```gdscript
 var tween = create_tween()
 tween.tween_property(self, "position", target_pos, 1.0) \
-    .set_trans(Tween.TRANS_BOUNCE) \
-    .set_ease(Tween.EASE_OUT)
+	.set_trans(Tween.TRANS_BOUNCE) \
+	.set_ease(Tween.EASE_OUT)
 ```
 
 | Transition | Effect |
@@ -929,23 +930,23 @@ tween.tween_property($Coin, "rotation:y", TAU, 2.0).from(0.0)
 ### One-Shot Timer (await)
 ```gdscript
 func spawn_enemy():
-    print("Spawning in 2 seconds...")
-    await get_tree().create_timer(2.0).timeout
-    print("Spawned!")
-    # Continue code here after delay
+	print("Spawning in 2 seconds...")
+	await get_tree().create_timer(2.0).timeout
+	print("Spawned!")
+	# Continue code here after delay
 ```
 
 ### Timer Node
 ```gdscript
 # Add Timer node as child, then:
 func _ready():
-    $Timer.timeout.connect(_on_timer_timeout)
-    $Timer.wait_time = 1.0
-    $Timer.one_shot = false  # Repeating
-    $Timer.start()
+	$Timer.timeout.connect(_on_timer_timeout)
+	$Timer.wait_time = 1.0
+	$Timer.one_shot = false  # Repeating
+	$Timer.start()
 
 func _on_timer_timeout():
-    spawn_enemy()
+	spawn_enemy()
 ```
 
 ### Creating Timer in Code
@@ -968,8 +969,8 @@ Groups let you organize nodes and perform batch operations.
 ```gdscript
 # In script
 func _ready():
-    add_to_group("enemies")
-    add_to_group("damageable")
+	add_to_group("enemies")
+	add_to_group("damageable")
 
 # Or in editor: Node > Groups tab
 ```
@@ -979,7 +980,7 @@ func _ready():
 # Get all nodes in group
 var enemies = get_tree().get_nodes_in_group("enemies")
 for enemy in enemies:
-    enemy.take_damage(10)
+	enemy.take_damage(10)
 
 # Get first node in group
 var player = get_tree().get_first_node_in_group("player")
@@ -989,7 +990,7 @@ get_tree().call_group("enemies", "alert")
 
 # Check if in group
 if is_in_group("enemies"):
-    print("I'm an enemy!")
+	print("I'm an enemy!")
 ```
 
 ### Common Group Uses
@@ -1008,7 +1009,7 @@ if is_in_group("enemies"):
 ### Change Scene by Path
 ```gdscript
 func go_to_level(level_num: int):
-    get_tree().change_scene_to_file("res://levels/level_%d.tscn" % level_num)
+	get_tree().change_scene_to_file("res://levels/level_%d.tscn" % level_num)
 ```
 
 ### Change Scene by PackedScene
@@ -1016,25 +1017,25 @@ func go_to_level(level_num: int):
 var next_level = preload("res://levels/level_2.tscn")
 
 func load_next_level():
-    get_tree().change_scene_to_packed(next_level)
+	get_tree().change_scene_to_packed(next_level)
 ```
 
 ### Reload Current Scene
 ```gdscript
 func restart_level():
-    get_tree().reload_current_scene()
+	get_tree().reload_current_scene()
 ```
 
 ### Fade Transition
 ```gdscript
 # With autoload SceneManager:
 func change_with_fade(new_scene_path: String):
-    var tween = create_tween()
-    tween.tween_property($FadeRect, "modulate:a", 1.0, 0.5)
-    await tween.finished
-    get_tree().change_scene_to_file(new_scene_path)
-    tween = create_tween()
-    tween.tween_property($FadeRect, "modulate:a", 0.0, 0.5)
+	var tween = create_tween()
+	tween.tween_property($FadeRect, "modulate:a", 1.0, 0.5)
+	await tween.finished
+	get_tree().change_scene_to_file(new_scene_path)
+	tween = create_tween()
+	tween.tween_property($FadeRect, "modulate:a", 0.0, 0.5)
 ```
 
 ---
@@ -1052,17 +1053,17 @@ var player_texture = preload("res://player.png")
 ```gdscript
 # Loaded when line executes - use for conditional/dynamic loading
 func spawn_enemy(type: String):
-    var scene = load("res://enemies/%s.tscn" % type)
-    var enemy = scene.instantiate()
-    add_child(enemy)
+	var scene = load("res://enemies/%s.tscn" % type)
+	var enemy = scene.instantiate()
+	add_child(enemy)
 ```
 
 ### Check Resource Exists
 ```gdscript
 if ResourceLoader.exists("res://levels/level_5.tscn"):
-    get_tree().change_scene_to_file("res://levels/level_5.tscn")
+	get_tree().change_scene_to_file("res://levels/level_5.tscn")
 else:
-    print("Level not found!")
+	print("Level not found!")
 ```
 
 ### Background Loading (Large Resources)
@@ -1070,18 +1071,18 @@ else:
 var loading_path = "res://huge_level.tscn"
 
 func start_loading():
-    ResourceLoader.load_threaded_request(loading_path)
+	ResourceLoader.load_threaded_request(loading_path)
 
 func _process(delta):
-    var status = ResourceLoader.load_threaded_get_status(loading_path)
-    match status:
-        ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-            var progress = []
-            ResourceLoader.load_threaded_get_status(loading_path, progress)
-            print("Loading: %d%%" % (progress[0] * 100))
-        ResourceLoader.THREAD_LOAD_LOADED:
-            var resource = ResourceLoader.load_threaded_get(loading_path)
-            get_tree().change_scene_to_packed(resource)
+	var status = ResourceLoader.load_threaded_get_status(loading_path)
+	match status:
+		ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			var progress = []
+			ResourceLoader.load_threaded_get_status(loading_path, progress)
+			print("Loading: %d%%" % (progress[0] * 100))
+		ResourceLoader.THREAD_LOAD_LOADED:
+			var resource = ResourceLoader.load_threaded_get(loading_path)
+			get_tree().change_scene_to_packed(resource)
 ```
 
 ---
@@ -1093,22 +1094,22 @@ func _process(delta):
 @onready var raycast = $RayCast3D
 
 func _physics_process(delta):
-    if raycast.is_colliding():
-        var collider = raycast.get_collider()
-        var point = raycast.get_collision_point()
-        var normal = raycast.get_collision_normal()
-        print("Hit: ", collider.name, " at ", point)
+	if raycast.is_colliding():
+		var collider = raycast.get_collider()
+		var point = raycast.get_collision_point()
+		var normal = raycast.get_collision_normal()
+		print("Hit: ", collider.name, " at ", point)
 ```
 
 ### Code-Based Raycast
 ```gdscript
 func shoot():
-    var space_state = get_world_3d().direct_space_state
-    var origin = camera.global_position
-    var end = origin + camera.global_transform.basis.z * -100
-    
-    var query = PhysicsRayQueryParameters3D.create(origin, end)
-    query.exclude = [self]  # Don't hit yourself
+	var space_state = get_world_3d().direct_space_state
+	var origin = camera.global_position
+	var end = origin + camera.global_transform.basis.z * -100
+	
+	var query = PhysicsRayQueryParameters3D.create(origin, end)
+	query.exclude = [self]  # Don't hit yourself
     query.collision_mask = 0b0011  # Only layers 1 and 2
     
     var result = space_state.intersect_ray(query)
@@ -1296,10 +1297,10 @@ func load_settings():
     var config = ConfigFile.new()
     var err = config.load("user://settings.cfg")
     if err != OK:
-        return  # File doesn't exist yet
-    
-    var volume = config.get_value("audio", "master_volume", 0.8)
-    var fullscreen = config.get_value("video", "fullscreen", false)
+		return  # File doesn't exist yet
+	
+	var volume = config.get_value("audio", "master_volume", 0.8)
+	var fullscreen = config.get_value("video", "fullscreen", false)
 ```
 
 ### JSON (Game Saves)
@@ -1308,53 +1309,53 @@ Best for: Complex save data, interoperability.
 ```gdscript
 # Save game to JSON
 func save_game():
-    var save_data = {
-        "player": {
-            "position": {"x": player.position.x, "y": player.position.y, "z": player.position.z},
-            "health": player.health,
-            "inventory": player.inventory
-        },
-        "level": current_level,
-        "score": score
-    }
-    
-    var file = FileAccess.open("user://savegame.json", FileAccess.WRITE)
-    file.store_string(JSON.stringify(save_data, "\t"))  # Pretty print
+	var save_data = {
+		"player": {
+			"position": {"x": player.position.x, "y": player.position.y, "z": player.position.z},
+			"health": player.health,
+			"inventory": player.inventory
+		},
+		"level": current_level,
+		"score": score
+	}
+	
+	var file = FileAccess.open("user://savegame.json", FileAccess.WRITE)
+	file.store_string(JSON.stringify(save_data, "\t"))  # Pretty print
 
 # Load game from JSON
 func load_game():
-    if not FileAccess.file_exists("user://savegame.json"):
-        return false
-    
-    var file = FileAccess.open("user://savegame.json", FileAccess.READ)
-    var json = JSON.new()
-    var error = json.parse(file.get_as_text())
-    
-    if error != OK:
-        print("JSON parse error: ", json.get_error_message())
-        return false
-    
-    var data = json.data
-    player.position = Vector3(data.player.position.x, data.player.position.y, data.player.position.z)
-    player.health = data.player.health
-    return true
+	if not FileAccess.file_exists("user://savegame.json"):
+		return false
+	
+	var file = FileAccess.open("user://savegame.json", FileAccess.READ)
+	var json = JSON.new()
+	var error = json.parse(file.get_as_text())
+	
+	if error != OK:
+		print("JSON parse error: ", json.get_error_message())
+		return false
+	
+	var data = json.data
+	player.position = Vector3(data.player.position.x, data.player.position.y, data.player.position.z)
+	player.health = data.player.health
+	return true
 ```
 
 ### FileAccess (Raw Files)
 ```gdscript
 # Write text file
 func write_text(path: String, content: String):
-    var file = FileAccess.open(path, FileAccess.WRITE)
-    file.store_string(content)
+	var file = FileAccess.open(path, FileAccess.WRITE)
+	file.store_string(content)
 
 # Read text file
 func read_text(path: String) -> String:
-    var file = FileAccess.open(path, FileAccess.READ)
-    return file.get_as_text()
+	var file = FileAccess.open(path, FileAccess.READ)
+	return file.get_as_text()
 
 # Check if file exists
 if FileAccess.file_exists("user://savegame.json"):
-    print("Save exists!")
+	print("Save exists!")
 ```
 
 ### Save Paths
@@ -1378,18 +1379,18 @@ if FileAccess.file_exists("user://savegame.json"):
 ```gdscript
 # Play sound effect
 func play_sound(sound: AudioStream):
-    var player = AudioStreamPlayer.new()
-    player.stream = sound
-    player.bus = "SFX"
-    add_child(player)
-    player.play()
-    player.finished.connect(player.queue_free)  # Auto-cleanup
+	var player = AudioStreamPlayer.new()
+	player.stream = sound
+	player.bus = "SFX"
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)  # Auto-cleanup
 
 # Preloaded sound
 @onready var jump_sound = preload("res://sounds/jump.ogg")
 
 func jump():
-    $JumpSFX.play()  # If AudioStreamPlayer child exists
+	$JumpSFX.play()  # If AudioStreamPlayer child exists
 ```
 
 ### Audio Buses
@@ -1412,9 +1413,9 @@ var volume = AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Master"))
 @onready var audio_3d = $AudioStreamPlayer3D
 
 func _ready():
-    audio_3d.unit_size = 10.0        # Distance for full volume
-    audio_3d.max_distance = 100.0    # Distance where sound is silent
-    audio_3d.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	audio_3d.unit_size = 10.0        # Distance for full volume
+	audio_3d.max_distance = 100.0    # Distance where sound is silent
+	audio_3d.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 ```
 
 ### Common Audio Buses Setup
@@ -1479,15 +1480,15 @@ mat.damping_max = 5.0
 ### One-Shot Particles (Explosions)
 ```gdscript
 func spawn_explosion(pos: Vector3):
-    var particles = preload("res://effects/explosion.tscn").instantiate()
-    particles.position = pos
-    particles.one_shot = true
-    particles.emitting = true
-    add_child(particles)
-    
-    # Auto-cleanup after particles finish
-    await get_tree().create_timer(particles.lifetime).timeout
-    particles.queue_free()
+	var particles = preload("res://effects/explosion.tscn").instantiate()
+	particles.position = pos
+	particles.one_shot = true
+	particles.emitting = true
+	add_child(particles)
+	
+	# Auto-cleanup after particles finish
+	await get_tree().create_timer(particles.lifetime).timeout
+	particles.queue_free()
 ```
 
 ### MCP Tool: Create Particle Effect
@@ -1531,7 +1532,7 @@ World (Node3D)
 ├── Floor (StaticBody3D)
 ├── Walls (StaticBody3D)
 └── Enemy (CharacterBody3D)
-    └── NavigationAgent3D
+	└── NavigationAgent3D
 ```
 
 ### Basic AI Movement
@@ -1542,22 +1543,22 @@ extends CharacterBody3D
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
 func _ready():
-    # Configure agent
-    nav_agent.path_desired_distance = 0.5
-    nav_agent.target_desired_distance = 0.5
+	# Configure agent
+	nav_agent.path_desired_distance = 0.5
+	nav_agent.target_desired_distance = 0.5
 
 func set_target(target_pos: Vector3):
-    nav_agent.target_position = target_pos
+	nav_agent.target_position = target_pos
 
 func _physics_process(delta):
-    if nav_agent.is_navigation_finished():
-        return
-    
-    var next_pos = nav_agent.get_next_path_position()
-    var direction = (next_pos - global_position).normalized()
-    
-    velocity = direction * speed
-    move_and_slide()
+	if nav_agent.is_navigation_finished():
+		return
+	
+	var next_pos = nav_agent.get_next_path_position()
+	var direction = (next_pos - global_position).normalized()
+	
+	velocity = direction * speed
+	move_and_slide()
 ```
 
 ### Following the Player
@@ -1566,22 +1567,22 @@ func _physics_process(delta):
 var player: Node3D
 
 func _ready():
-    player = get_tree().get_first_node_in_group("player")
+	player = get_tree().get_first_node_in_group("player")
 
 func _physics_process(delta):
-    if player:
-        nav_agent.target_position = player.global_position
-    
-    if not nav_agent.is_navigation_finished():
-        var next_pos = nav_agent.get_next_path_position()
-        var direction = (next_pos - global_position).normalized()
-        velocity = direction * chase_speed
-        
-        # Face movement direction
-        if direction.length() > 0.1:
-            look_at(global_position + direction)
-        
-        move_and_slide()
+	if player:
+		nav_agent.target_position = player.global_position
+	
+	if not nav_agent.is_navigation_finished():
+		var next_pos = nav_agent.get_next_path_position()
+		var direction = (next_pos - global_position).normalized()
+		velocity = direction * chase_speed
+		
+		# Face movement direction
+		if direction.length() > 0.1:
+			look_at(global_position + direction)
+		
+		move_and_slide()
 ```
 
 ### NavigationAgent3D Key Properties
@@ -1622,9 +1623,9 @@ uniform float metallic : hint_range(0.0, 1.0) = 0.0;
 uniform float roughness : hint_range(0.0, 1.0) = 0.5;
 
 void fragment() {
-    ALBEDO = albedo_color.rgb;
-    METALLIC = metallic;
-    ROUGHNESS = roughness;
+	ALBEDO = albedo_color.rgb;
+	METALLIC = metallic;
+	ROUGHNESS = roughness;
 }
 ```
 
@@ -1636,9 +1637,9 @@ uniform sampler2D albedo_texture : source_color;
 uniform vec4 tint_color : source_color = vec4(1.0);
 
 void fragment() {
-    vec4 tex_color = texture(albedo_texture, UV);
-    ALBEDO = tex_color.rgb * tint_color.rgb;
-    ALPHA = tex_color.a * tint_color.a;
+	vec4 tex_color = texture(albedo_texture, UV);
+	ALBEDO = tex_color.rgb * tint_color.rgb;
+	ALPHA = tex_color.a * tint_color.a;
 }
 ```
 
@@ -1651,8 +1652,8 @@ uniform float wave_speed = 2.0;
 uniform float wave_frequency = 3.0;
 
 void vertex() {
-    float wave = sin(VERTEX.x * wave_frequency + TIME * wave_speed) * wave_height;
-    VERTEX.y += wave;
+	float wave = sin(VERTEX.x * wave_frequency + TIME * wave_speed) * wave_height;
+	VERTEX.y += wave;
 }
 ```
 
@@ -1696,9 +1697,49 @@ uniform float flash_intensity : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 flash_color : source_color = vec4(1.0);
 
 void fragment() {
-    vec4 tex_color = texture(TEXTURE, UV);
-    COLOR = mix(tex_color, flash_color, flash_intensity);
+	vec4 tex_color = texture(TEXTURE, UV);
+	COLOR = mix(tex_color, flash_color, flash_intensity);
 }
+```
+
+### ⚠️ CRITICAL: material_override vs surface_material_override
+
+When applying shaders via MCP tools or code, **there are TWO places materials can be assigned**:
+
+| Property | How to Access | When Used |
+|----------|---------------|-----------|
+| `material_override` | `mesh_instance.material_override` | Overrides ALL surfaces |
+| `surface_material_override/N` | `mesh_instance.get_surface_override_material(N)` | Per-surface override |
+
+**The MCP `godot_apply_shader` tool uses `surface_material_override/0`**, not `material_override`.
+
+#### ❌ WRONG - Will return null:
+```gdscript
+var mat = mesh_instance.material_override  # NULL!
+mat.set_shader_parameter("color", Color.RED)  # ERROR!
+```
+
+#### ✅ CORRECT - Use surface override:
+```gdscript
+var mat = mesh_instance.get_surface_override_material(0)  # Gets the actual material
+mat.set_shader_parameter("color", Color.RED)  # Works!
+```
+
+#### How to Check Which is Used:
+Use `godot_get_node_details` and look for:
+- `material_override`: `<Object#null>` means NOT used
+- `surface_material_override/0`: `<ShaderMaterial#...>` means THIS is the material
+
+#### Setting Shader Parameters After Applying Shader:
+```gdscript
+# After godot_apply_shader(), always use:
+var root = EditorInterface.get_edited_scene_root()
+var mesh = root.get_node("MyNode/Mesh")
+var mat = mesh.get_surface_override_material(0)  # NOT material_override!
+
+# Now you can set parameters
+mat.set_shader_parameter("texture_grass", my_texture)
+mat.set_shader_parameter("height_threshold", 0.5)
 ```
 
 ---
@@ -1730,10 +1771,10 @@ Main (Node3D)
 │       ├── MeshInstance3D
 │       └── CollisionShape3D
 └── UI (CanvasLayer)
-    └── HUD (Control)
-        ├── HealthBar (ProgressBar)
-        ├── AmmoLabel (Label)
-        └── Crosshair (TextureRect)
+	└── HUD (Control)
+		├── HealthBar (ProgressBar)
+		├── AmmoLabel (Label)
+		└── Crosshair (TextureRect)
 ```
 
 ### Minimal Player Script
@@ -1748,28 +1789,28 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var camera = $Camera3D
 
 func _ready():
-    Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _unhandled_input(event):
-    if event is InputEventMouseMotion:
-        rotate_y(-event.relative.x * MOUSE_SENS)
-        camera.rotate_x(-event.relative.y * MOUSE_SENS)
-        camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
+	if event is InputEventMouseMotion:
+		rotate_y(-event.relative.x * MOUSE_SENS)
+		camera.rotate_x(-event.relative.y * MOUSE_SENS)
+		camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
 
 func _physics_process(delta):
-    if not is_on_floor():
-        velocity.y -= gravity * delta
-    
-    if Input.is_action_just_pressed("ui_accept") and is_on_floor():
-        velocity.y = JUMP_VELOCITY
-    
-    var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-    var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-    
-    velocity.x = direction.x * SPEED if direction else move_toward(velocity.x, 0, SPEED)
-    velocity.z = direction.z * SPEED if direction else move_toward(velocity.z, 0, SPEED)
-    
-    move_and_slide()
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+	
+	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+	
+	var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	
+	velocity.x = direction.x * SPEED if direction else move_toward(velocity.x, 0, SPEED)
+	velocity.z = direction.z * SPEED if direction else move_toward(velocity.z, 0, SPEED)
+	
+	move_and_slide()
 ```
 
 ### Minimal Enemy AI Script
@@ -1783,29 +1824,29 @@ extends CharacterBody3D
 var player: Node3D
 
 func _ready():
-    player = get_tree().get_first_node_in_group("player")
-    nav_agent.velocity_computed.connect(_on_velocity_computed)
+	player = get_tree().get_first_node_in_group("player")
+	nav_agent.velocity_computed.connect(_on_velocity_computed)
 
 func _physics_process(delta):
-    if not player:
-        return
-    
-    var distance = global_position.distance_to(player.global_position)
-    if distance < chase_range:
-        nav_agent.target_position = player.global_position
-        
-        if not nav_agent.is_navigation_finished():
-            var next_pos = nav_agent.get_next_path_position()
-            var direction = (next_pos - global_position).normalized()
-            velocity = direction * speed
-            look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z))
-    else:
-        velocity = Vector3.ZERO
-    
-    move_and_slide()
+	if not player:
+		return
+	
+	var distance = global_position.distance_to(player.global_position)
+	if distance < chase_range:
+		nav_agent.target_position = player.global_position
+		
+		if not nav_agent.is_navigation_finished():
+			var next_pos = nav_agent.get_next_path_position()
+			var direction = (next_pos - global_position).normalized()
+			velocity = direction * speed
+			look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z))
+	else:
+		velocity = Vector3.ZERO
+	
+	move_and_slide()
 
 func _on_velocity_computed(safe_velocity):
-    velocity = safe_velocity
+	velocity = safe_velocity
 ```
 
 ### Minimal Pickup Script
@@ -1816,17 +1857,17 @@ extends Area3D
 @export var spin_speed: float = 2.0
 
 func _ready():
-    monitoring = true
-    body_entered.connect(_on_body_entered)
+	monitoring = true
+	body_entered.connect(_on_body_entered)
 
 func _process(delta):
-    rotate_y(spin_speed * delta)
+	rotate_y(spin_speed * delta)
 
 func _on_body_entered(body):
-    if body.is_in_group("player"):
-        if body.has_method("add_score"):
-            body.add_score(value)
-        queue_free()
+	if body.is_in_group("player"):
+		if body.has_method("add_score"):
+			body.add_score(value)
+		queue_free()
 ```
 
 ### Minimal Game Manager (Autoload)
@@ -1843,24 +1884,24 @@ var health: int = 100
 var max_health: int = 100
 
 func add_score(amount: int):
-    score += amount
-    score_changed.emit(score)
+	score += amount
+	score_changed.emit(score)
 
 func take_damage(amount: int):
-    health = max(0, health - amount)
-    health_changed.emit(health)
-    if health <= 0:
-        game_over.emit()
+	health = max(0, health - amount)
+	health_changed.emit(health)
+	if health <= 0:
+		game_over.emit()
 
 func heal(amount: int):
-    health = min(max_health, health + amount)
-    health_changed.emit(health)
+	health = min(max_health, health + amount)
+	health_changed.emit(health)
 
 func reset():
-    score = 0
-    health = max_health
-    score_changed.emit(score)
-    health_changed.emit(health)
+	score = 0
+	health = max_health
+	score_changed.emit(score)
+	health_changed.emit(health)
 ```
 
 ---
@@ -1883,19 +1924,19 @@ func reset():
 extends RigidBody3D
 
 func _ready():
-    # Basic properties
-    mass = 10.0              # Weight in kg
-    gravity_scale = 1.0      # Multiplier for gravity
-    
-    # Damping (slows down over time)
-    linear_damp = 0.1        # Slows linear movement
-    angular_damp = 0.1       # Slows rotation
-    
-    # Freeze modes
-    freeze = false           # If true, stops all physics
-    # freeze_mode options:
-    # FREEZE_MODE_STATIC - Acts like StaticBody3D
-    # FREEZE_MODE_KINEMATIC - Acts like AnimatableBody3D
+	# Basic properties
+	mass = 10.0              # Weight in kg
+	gravity_scale = 1.0      # Multiplier for gravity
+	
+	# Damping (slows down over time)
+	linear_damp = 0.1        # Slows linear movement
+	angular_damp = 0.1       # Slows rotation
+	
+	# Freeze modes
+	freeze = false           # If true, stops all physics
+	# freeze_mode options:
+	# FREEZE_MODE_STATIC - Acts like StaticBody3D
+	# FREEZE_MODE_KINEMATIC - Acts like AnimatableBody3D
 ```
 
 ### Scene Structure
@@ -1914,17 +1955,17 @@ Crate (RigidBody3D)
 extends RigidBody3D
 
 func _physics_process(delta):
-    # Continuous force (like a rocket thruster)
-    if Input.is_action_pressed("thrust"):
-        apply_central_force(Vector3(0, 100, 0))
+	# Continuous force (like a rocket thruster)
+	if Input.is_action_pressed("thrust"):
+		apply_central_force(Vector3(0, 100, 0))
 
 func hit_by_explosion(direction: Vector3, power: float):
-    # One-time impulse (like an explosion)
-    apply_central_impulse(direction * power)
+	# One-time impulse (like an explosion)
+	apply_central_impulse(direction * power)
 
 func hit_at_point(position: Vector3, impulse: Vector3):
-    # Impulse at specific point (causes spin)
-    apply_impulse(impulse, position - global_position)
+	# Impulse at specific point (causes spin)
+	apply_impulse(impulse, position - global_position)
 ```
 
 ### Force vs Impulse Reference
@@ -1962,25 +2003,25 @@ rigid_body.physics_material_override = bouncy_mat
 extends RigidBody3D
 
 func _ready():
-    # Enable contact monitoring
-    contact_monitor = true
-    max_contacts_reported = 4
-    
-    # Connect signals
-    body_entered.connect(_on_body_entered)
-    body_exited.connect(_on_body_exited)
+	# Enable contact monitoring
+	contact_monitor = true
+	max_contacts_reported = 4
+	
+	# Connect signals
+	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
 
 func _on_body_entered(body: Node):
-    print("Hit: ", body.name)
-    
-    # Check what we hit
-    if body is StaticBody3D:
-        print("Hit ground/wall")
-    elif body is RigidBody3D:
-        print("Hit another physics object")
+	print("Hit: ", body.name)
+	
+	# Check what we hit
+	if body is StaticBody3D:
+		print("Hit ground/wall")
+	elif body is RigidBody3D:
+		print("Hit another physics object")
 
 func _on_body_exited(body: Node):
-    print("No longer touching: ", body.name)
+	print("No longer touching: ", body.name)
 ```
 
 ### _integrate_forces (Advanced Control)
@@ -1990,20 +2031,20 @@ For precise physics control, use `_integrate_forces()`:
 extends RigidBody3D
 
 func _integrate_forces(state: PhysicsDirectBodyState3D):
-    # Get current velocity
-    var vel = state.linear_velocity
-    
-    # Clamp max speed
-    if vel.length() > 20.0:
-        state.linear_velocity = vel.normalized() * 20.0
-    
-    # Custom gravity
-    state.add_constant_central_force(Vector3(0, -20, 0))
-    
-    # Check contacts
-    for i in state.get_contact_count():
-        var contact_pos = state.get_contact_local_position(i)
-        var contact_normal = state.get_contact_local_normal(i)
+	# Get current velocity
+	var vel = state.linear_velocity
+	
+	# Clamp max speed
+	if vel.length() > 20.0:
+		state.linear_velocity = vel.normalized() * 20.0
+	
+	# Custom gravity
+	state.add_constant_central_force(Vector3(0, -20, 0))
+	
+	# Check contacts
+	for i in state.get_contact_count():
+		var contact_pos = state.get_contact_local_position(i)
+		var contact_normal = state.get_contact_local_normal(i)
 ```
 
 ### Freeze Modes
@@ -2031,7 +2072,7 @@ rigid_body.can_sleep = false
 
 # Check if sleeping
 if rigid_body.sleeping:
-    print("Body is at rest")
+	print("Body is at rest")
 ```
 
 ### Picking Up Objects
@@ -2041,21 +2082,21 @@ var held_object: RigidBody3D = null
 @onready var hold_position = $Camera3D/HoldPosition
 
 func pickup(object: RigidBody3D):
-    held_object = object
-    held_object.freeze = true  # Stop physics while holding
+	held_object = object
+	held_object.freeze = true  # Stop physics while holding
 
 func drop():
-    if held_object:
-        held_object.freeze = false
-        held_object.global_position = hold_position.global_position
-        held_object = null
+	if held_object:
+		held_object.freeze = false
+		held_object.global_position = hold_position.global_position
+		held_object = null
 
 func throw(power: float):
-    if held_object:
-        held_object.freeze = false
-        held_object.global_position = hold_position.global_position
-        held_object.apply_central_impulse(-camera.global_transform.basis.z * power)
-        held_object = null
+	if held_object:
+		held_object.freeze = false
+		held_object.global_position = hold_position.global_position
+		held_object.apply_central_impulse(-camera.global_transform.basis.z * power)
+		held_object = null
 ```
 
 ### Explosive Crate Example
@@ -2067,29 +2108,29 @@ extends RigidBody3D
 var health: int = 3
 
 func take_damage():
-    health -= 1
-    if health <= 0:
-        explode()
+	health -= 1
+	if health <= 0:
+		explode()
 
 func explode():
-    # Find nearby bodies
-    var space = get_world_3d().direct_space_state
-    var query = PhysicsShapeQueryParameters3D.new()
-    query.shape = SphereShape3D.new()
-    query.shape.radius = explosion_radius
-    query.transform = global_transform
-    
-    var results = space.intersect_shape(query)
-    for result in results:
-        var body = result.collider
-        if body is RigidBody3D and body != self:
-            var direction = (body.global_position - global_position).normalized()
-            var distance = global_position.distance_to(body.global_position)
-            var falloff = 1.0 - (distance / explosion_radius)
-            body.apply_central_impulse(direction * explosion_force * falloff)
-    
-    # Spawn particles, play sound, etc.
-    queue_free()
+	# Find nearby bodies
+	var space = get_world_3d().direct_space_state
+	var query = PhysicsShapeQueryParameters3D.new()
+	query.shape = SphereShape3D.new()
+	query.shape.radius = explosion_radius
+	query.transform = global_transform
+	
+	var results = space.intersect_shape(query)
+	for result in results:
+		var body = result.collider
+		if body is RigidBody3D and body != self:
+			var direction = (body.global_position - global_position).normalized()
+			var distance = global_position.distance_to(body.global_position)
+			var falloff = 1.0 - (distance / explosion_radius)
+			body.apply_central_impulse(direction * explosion_force * falloff)
+	
+	# Spawn particles, play sound, etc.
+	queue_free()
 ```
 
 ---
@@ -2141,22 +2182,22 @@ const JUMP_VELOCITY = -400.0
 var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
 
 func _physics_process(delta):
-    # Gravity
-    if not is_on_floor():
-        velocity.y += gravity * delta
+	# Gravity
+	if not is_on_floor():
+		velocity.y += gravity * delta
 
-    # Jump
-    if Input.is_action_just_pressed("jump") and is_on_floor():
-        velocity.y = JUMP_VELOCITY
+	# Jump
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
 
-    # Horizontal movement
-    var direction = Input.get_axis("move_left", "move_right")
-    if direction:
-        velocity.x = direction * SPEED
-    else:
-        velocity.x = move_toward(velocity.x, 0, SPEED)
+	# Horizontal movement
+	var direction = Input.get_axis("move_left", "move_right")
+	if direction:
+		velocity.x = direction * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
 
-    move_and_slide()
+	move_and_slide()
 ```
 
 ### Advanced Platformer (Coyote Time, Jump Buffer)
@@ -2174,38 +2215,38 @@ var jump_buffer_timer: float = 0.0
 var was_on_floor: bool = false
 
 func _physics_process(delta):
-    # Track coyote time
-    if is_on_floor():
-        coyote_timer = COYOTE_TIME
-    else:
-        coyote_timer -= delta
-    
-    # Track jump buffer
-    if Input.is_action_just_pressed("jump"):
-        jump_buffer_timer = JUMP_BUFFER_TIME
-    else:
-        jump_buffer_timer -= delta
-    
-    # Gravity
-    if not is_on_floor():
-        velocity.y += gravity * delta
-    
-    # Jump (with coyote time and buffer)
-    if jump_buffer_timer > 0 and coyote_timer > 0:
-        velocity.y = JUMP_VELOCITY
-        jump_buffer_timer = 0
-        coyote_timer = 0
-    
-    # Variable jump height (release to fall faster)
-    if Input.is_action_just_released("jump") and velocity.y < 0:
-        velocity.y *= 0.5
-    
-    # Movement
-    var direction = Input.get_axis("move_left", "move_right")
-    velocity.x = direction * SPEED if direction else move_toward(velocity.x, 0, SPEED)
-    
-    move_and_slide()
-    was_on_floor = is_on_floor()
+	# Track coyote time
+	if is_on_floor():
+		coyote_timer = COYOTE_TIME
+	else:
+		coyote_timer -= delta
+	
+	# Track jump buffer
+	if Input.is_action_just_pressed("jump"):
+		jump_buffer_timer = JUMP_BUFFER_TIME
+	else:
+		jump_buffer_timer -= delta
+	
+	# Gravity
+	if not is_on_floor():
+		velocity.y += gravity * delta
+	
+	# Jump (with coyote time and buffer)
+	if jump_buffer_timer > 0 and coyote_timer > 0:
+		velocity.y = JUMP_VELOCITY
+		jump_buffer_timer = 0
+		coyote_timer = 0
+	
+	# Variable jump height (release to fall faster)
+	if Input.is_action_just_released("jump") and velocity.y < 0:
+		velocity.y *= 0.5
+	
+	# Movement
+	var direction = Input.get_axis("move_left", "move_right")
+	velocity.x = direction * SPEED if direction else move_toward(velocity.x, 0, SPEED)
+	
+	move_and_slide()
+	was_on_floor = is_on_floor()
 ```
 
 ### Sprite Flipping
@@ -2213,13 +2254,13 @@ func _physics_process(delta):
 @onready var sprite = $AnimatedSprite2D
 
 func _physics_process(delta):
-    var direction = Input.get_axis("move_left", "move_right")
-    
-    # Flip sprite based on direction
-    if direction > 0:
-        sprite.flip_h = false
-    elif direction < 0:
-        sprite.flip_h = true
+	var direction = Input.get_axis("move_left", "move_right")
+	
+	# Flip sprite based on direction
+	if direction > 0:
+		sprite.flip_h = false
+	elif direction < 0:
+		sprite.flip_h = true
 ```
 
 ### Wall Jump
@@ -2227,12 +2268,12 @@ func _physics_process(delta):
 const WALL_JUMP_VELOCITY = Vector2(300, -350)
 
 func _physics_process(delta):
-    # ... normal movement code ...
-    
-    # Wall jump
-    if Input.is_action_just_pressed("jump") and is_on_wall() and not is_on_floor():
-        var wall_normal = get_wall_normal()
-        velocity = Vector2(wall_normal.x * WALL_JUMP_VELOCITY.x, WALL_JUMP_VELOCITY.y)
+	# ... normal movement code ...
+	
+	# Wall jump
+	if Input.is_action_just_pressed("jump") and is_on_wall() and not is_on_floor():
+		var wall_normal = get_wall_normal()
+		velocity = Vector2(wall_normal.x * WALL_JUMP_VELOCITY.x, WALL_JUMP_VELOCITY.y)
 ```
 
 ---
@@ -2254,34 +2295,34 @@ Level (Node2D)
 @onready var tilemap = $TileMapLayer
 
 func _ready():
-    # Set a tile at position (5, 3)
-    # Parameters: coords, source_id, atlas_coords, alternative_tile
-    tilemap.set_cell(Vector2i(5, 3), 0, Vector2i(0, 0))
-    
-    # Remove a tile
-    tilemap.erase_cell(Vector2i(5, 3))
-    
-    # Get tile at position
-    var source_id = tilemap.get_cell_source_id(Vector2i(5, 3))
-    var atlas_coords = tilemap.get_cell_atlas_coords(Vector2i(5, 3))
+	# Set a tile at position (5, 3)
+	# Parameters: coords, source_id, atlas_coords, alternative_tile
+	tilemap.set_cell(Vector2i(5, 3), 0, Vector2i(0, 0))
+	
+	# Remove a tile
+	tilemap.erase_cell(Vector2i(5, 3))
+	
+	# Get tile at position
+	var source_id = tilemap.get_cell_source_id(Vector2i(5, 3))
+	var atlas_coords = tilemap.get_cell_atlas_coords(Vector2i(5, 3))
 
 func world_to_tile(world_pos: Vector2) -> Vector2i:
-    return tilemap.local_to_map(tilemap.to_local(world_pos))
+	return tilemap.local_to_map(tilemap.to_local(world_pos))
 
 func tile_to_world(tile_pos: Vector2i) -> Vector2:
-    return tilemap.to_global(tilemap.map_to_local(tile_pos))
+	return tilemap.to_global(tilemap.map_to_local(tile_pos))
 ```
 
 ### Detecting Tile Collisions
 ```gdscript
 func get_tile_at_player():
-    var tile_pos = tilemap.local_to_map(tilemap.to_local(player.global_position))
-    var tile_data = tilemap.get_cell_tile_data(tile_pos)
-    
-    if tile_data:
-        # Check custom data layers set in TileSet
-        var is_hazard = tile_data.get_custom_data("is_hazard")
-        var damage = tile_data.get_custom_data("damage")
+	var tile_pos = tilemap.local_to_map(tilemap.to_local(player.global_position))
+	var tile_data = tilemap.get_cell_tile_data(tile_pos)
+	
+	if tile_data:
+		# Check custom data layers set in TileSet
+		var is_hazard = tile_data.get_custom_data("is_hazard")
+		var damage = tile_data.get_custom_data("damage")
 ```
 
 ### TileSet Custom Data
@@ -2305,9 +2346,9 @@ In the TileSet editor, you can add custom data layers:
 @onready var camera = $Camera2D
 
 func _ready():
-    camera.enabled = true
-    camera.position_smoothing_enabled = true
-    camera.position_smoothing_speed = 5.0
+	camera.enabled = true
+	camera.position_smoothing_enabled = true
+	camera.position_smoothing_speed = 5.0
 ```
 
 ### Camera Limits (Don't Go Past Level Bounds)
@@ -3074,14 +3115,14 @@ uniform sampler2D texture_rock : source_color;
 uniform float slope_threshold = 0.5;
 
 void fragment() {
-    vec3 world_normal = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
-    float slope = 1.0 - abs(world_normal.y);
-    
-    vec3 grass = texture(texture_grass, UV * 10.0).rgb;
-    vec3 rock = texture(texture_rock, UV * 10.0).rgb;
-    
-    float blend = smoothstep(slope_threshold - 0.1, slope_threshold + 0.1, slope);
-    ALBEDO = mix(grass, rock, blend);
+	vec3 world_normal = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	float slope = 1.0 - abs(world_normal.y);
+	
+	vec3 grass = texture(texture_grass, UV * 10.0).rgb;
+	vec3 rock = texture(texture_rock, UV * 10.0).rgb;
+	
+	float blend = smoothstep(slope_threshold - 0.1, slope_threshold + 0.1, slope);
+	ALBEDO = mix(grass, rock, blend);
 }
 ```
 
@@ -3212,24 +3253,24 @@ godot_create_ui_template(template="inventory_grid")
 ```
 CanvasLayer (MainMenu)
 └── PanelContainer
-    └── CenterContainer
-        └── VBoxContainer
-            ├── Label (Title)
-            ├── Button (PlayButton)
-            ├── Button (OptionsButton)
-            └── Button (QuitButton)
+	└── CenterContainer
+		└── VBoxContainer
+			├── Label (Title)
+			├── Button (PlayButton)
+			├── Button (OptionsButton)
+			└── Button (QuitButton)
 ```
 
 **hud:**
 ```
 CanvasLayer (HUD)
 └── Control (Container)
-    ├── HBoxContainer (HealthContainer)
-    │   ├── Label (HealthIcon)
-    │   └── ProgressBar (HealthBar)
-    ├── Label (ScoreLabel)
-    ├── Label (AmmoLabel)
-    └── Label (Crosshair)
+	├── HBoxContainer (HealthContainer)
+	│   ├── Label (HealthIcon)
+	│   └── ProgressBar (HealthBar)
+	├── Label (ScoreLabel)
+	├── Label (AmmoLabel)
+	└── Label (Crosshair)
 ```
 
 **inventory_grid:**
@@ -3237,11 +3278,11 @@ CanvasLayer (HUD)
 CanvasLayer (Inventory)
 ├── ColorRect (Background)
 └── CenterContainer
-    └── PanelContainer
-        └── VBoxContainer
-            ├── Label (Title)
-            ├── GridContainer (ItemGrid) [20 slots]
-            └── Button (CloseButton)
+	└── PanelContainer
+		└── VBoxContainer
+			├── Label (Title)
+			├── GridContainer (ItemGrid) [20 slots]
+			└── Button (CloseButton)
 ```
 
 ### Connecting UI Signals
@@ -3251,7 +3292,7 @@ var play_btn = get_node("MainMenu/Panel/Center/VBox/PlayButton")
 play_btn.pressed.connect(_on_play_pressed)
 
 func _on_play_pressed():
-    get_tree().change_scene_to_file("res://game.tscn")
+	get_tree().change_scene_to_file("res://game.tscn")
 ```
 
 ---
@@ -3279,37 +3320,37 @@ Files are saved to `user://` directory:
 ```gdscript
 # Save game
 func save_game():
-    var save_data = {
-        "player": {
-            "position": {"x": player.position.x, "y": player.position.y, "z": player.position.z},
-            "health": player.health,
-            "inventory": player.inventory
-        },
-        "level": current_level,
-        "score": score,
-        "playtime": playtime
-    }
-    
-    var file = FileAccess.open("user://save.json", FileAccess.WRITE)
-    file.store_string(JSON.stringify(save_data, "\t"))
-    file.close()
+	var save_data = {
+		"player": {
+			"position": {"x": player.position.x, "y": player.position.y, "z": player.position.z},
+			"health": player.health,
+			"inventory": player.inventory
+		},
+		"level": current_level,
+		"score": score,
+		"playtime": playtime
+	}
+	
+	var file = FileAccess.open("user://save.json", FileAccess.WRITE)
+	file.store_string(JSON.stringify(save_data, "\t"))
+	file.close()
 
 # Load game
 func load_game():
-    if not FileAccess.file_exists("user://save.json"):
-        return false
-    
-    var file = FileAccess.open("user://save.json", FileAccess.READ)
-    var json = JSON.new()
-    json.parse(file.get_as_text())
-    file.close()
-    
-    var data = json.data
-    player.position = Vector3(data.player.position.x, data.player.position.y, data.player.position.z)
-    player.health = data.player.health
-    current_level = data.level
-    score = data.score
-    return true
+	if not FileAccess.file_exists("user://save.json"):
+		return false
+	
+	var file = FileAccess.open("user://save.json", FileAccess.READ)
+	var json = JSON.new()
+	json.parse(file.get_as_text())
+	file.close()
+	
+	var data = json.data
+	player.position = Vector3(data.player.position.x, data.player.position.y, data.player.position.z)
+	player.health = data.player.health
+	current_level = data.level
+	score = data.score
+	return true
 ```
 
 ### Best Practices
