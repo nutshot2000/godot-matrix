@@ -238,7 +238,9 @@ func _generate_terrain_mesh(params: Dictionary) -> Dictionary:
 	# 1. Generate Noise
 	var noise = FastNoiseLite.new()
 	noise.seed = noise_seed
-	noise.frequency = 0.05
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.02  # Smooth rolling hills by default (was 0.05)
+	noise.fractal_octaves = 4
 	
 	# 2. Build Mesh with SurfaceTool
 	var st = SurfaceTool.new()
