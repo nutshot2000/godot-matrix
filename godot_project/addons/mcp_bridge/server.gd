@@ -2170,11 +2170,26 @@ func _spawn_fps_controller(params: Dictionary) -> Dictionary:
 	player.name = name
 	parent.add_child(player)
 	player.owner = root
+	
+	# Add CollisionShape3D with CapsuleShape3D (1.8m tall player)
+	var col_shape = CollisionShape3D.new()
+	col_shape.name = "CollisionShape3D"
+	var capsule = CapsuleShape3D.new()
+	capsule.radius = 0.4
+	capsule.height = 1.8
+	col_shape.shape = capsule
+	col_shape.position = Vector3(0, 0.9, 0)  # Center capsule so feet are at origin
+	player.add_child(col_shape)
+	col_shape.owner = root
+	
+	# Add Camera3D at eye level
 	if ClassDB.class_exists("Camera3D"):
 		var cam = ClassDB.instantiate("Camera3D")
 		cam.name = "Camera3D"
+		cam.position = Vector3(0, 1.6, 0)  # Eye level
 		player.add_child(cam)
 		cam.owner = root
+	
 	# Attach existing FPS script if present
 	if FileAccess.file_exists("res://player.gd"):
 		var script = load("res://player.gd")

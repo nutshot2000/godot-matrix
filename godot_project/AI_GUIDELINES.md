@@ -644,9 +644,9 @@ Main (Node3D)
 │   ├── Camera3D
 │   └── CollisionShape3D (CapsuleShape3D)
 └── HUD (CanvasLayer)
-    └── Control
-        ├── HealthBar (ProgressBar)
-        └── ScoreLabel (Label)
+	└── Control
+		├── HealthBar (ProgressBar)
+		└── ScoreLabel (Label)
 ```
 
 ### 2. Environment Setup
@@ -705,18 +705,18 @@ camera.position = Vector3(0, 1.6, 0)
 extends Area3D
 
 func _ready():
-    monitoring = true
-    body_entered.connect(_on_body_entered)
+	monitoring = true
+	body_entered.connect(_on_body_entered)
 
 func _process(delta):
-    rotate_y(2.0 * delta)
+	rotate_y(2.0 * delta)
 
 func _on_body_entered(body):
-    if body.name == "Player":
-        var main = get_node_or_null("/root/Main")
-        if main and main.has_method("add_score"):
-            main.add_score(10)
-        queue_free()
+	if body.name == "Player":
+		var main = get_node_or_null("/root/Main")
+		if main and main.has_method("add_score"):
+			main.add_score(10)
+		queue_free()
 ```
 
 ---
