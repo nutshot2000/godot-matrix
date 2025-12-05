@@ -1142,26 +1142,28 @@ def godot_create_trigger_area(
     parent_path: str = ".",
     name: str = "TriggerArea",
     shape: str = "box",
-    size: float = 2.0
+    size: float = 2.0,
+    debug_mesh: bool = False
 ) -> str:
     """
     Create an Area3D with CollisionShape3D ready to detect bodies.
-    Perfect for pickups, damage zones, checkpoints, or any trigger.
+    Generic tool for pickups, damage zones, checkpoints, or any trigger.
     
     Args:
         parent_path: Parent node path
         name: Name for the trigger area
         shape: Collision shape type - "box", "sphere", "capsule", "cylinder"
         size: Size of the trigger area
+        debug_mesh: Show transparent debug mesh (default: False)
     
-    Note: Connect body_entered/body_exited signals to detect player or objects.
-    The Area3D comes with collision shape already configured!
+    Note: Connect body_entered/body_exited signals for your game logic.
     """
     response = send_to_godot("create_trigger_area", {
         "parent_path": parent_path,
         "name": name,
         "shape": shape,
-        "size": size
+        "size": size,
+        "debug_mesh": debug_mesh
     })
     if "error" in response:
         return f"Error: {response['error']}"

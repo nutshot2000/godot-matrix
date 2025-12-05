@@ -2200,49 +2200,50 @@ func _spawn_fps_controller(params: Dictionary) -> Dictionary:
 		var cam = ClassDB.instantiate("Camera3D")
 		cam.name = "Camera3D"
 		cam.position = Vector3(0, 1.6, 0)  # Eye level
-		cam.current = true  # Make this the active camera!
+		cam.current = true  # Make this the active camera
 		player.add_child(cam)
 		cam.owner = root
 	
-	# Attach existing FPS script if present
-	if FileAccess.file_exists("res://player.gd"):
-		var script = load("res://player.gd")
-		if script:
-			player.set_script(script)
-	return {"result": "FPS controller spawned", "path": str(player.get_path())}
+	# No script attached - user creates their own movement script
+	# This keeps the tool generic for FPS, third-person, or any game type
+	
+	return {"result": "FPS controller created with collision and camera. Attach a movement script to control it.", "path": str(player.get_path())}
 
 func _create_health_bar_ui(params: Dictionary) -> Dictionary:
 	var parent_path = params.get("parent_path", ".")
-	var name = params.get("name", "HealthBar")
+	var bar_name = params.get("name", "HealthBar")
+	var width = float(params.get("width", 200))
+	var height = float(params.get("height", 25))
 	var root = _get_actual_editor_root()
 	if not root:
 		return {"error": "No active scene"}
 	var parent = root.get_node_or_null(parent_path) if parent_path != "." else root
 	if not parent:
 		return {"error": "Parent not found"}
-	if not ClassDB.class_exists("Control") or not ClassDB.class_exists("ProgressBar"):
+	if not ClassDB.class_exists("CanvasLayer") or not ClassDB.class_exists("ProgressBar"):
 		return {"error": "UI classes not available"}
-	var container = ClassDB.instantiate("Control")
-	container.name = name
-	parent.add_child(container)
-	container.owner = root
-	container.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	container.offset_left = 20
-	container.offset_top = 20
-	container.offset_right = 220
-	container.offset_bottom = 50
-	var bar = ClassDB.instantiate("ProgressBar")
+	
+	# Wrap in CanvasLayer so it renders on top of 3D scene
+	var canvas = CanvasLayer.new()
+	canvas.name = bar_name
+	canvas.layer = 10  # High layer to be on top
+	parent.add_child(canvas)
+	canvas.owner = root
+	
+	# Simple progress bar - user can style/customize as needed
+	var bar = ProgressBar.new()
 	bar.name = "Bar"
-	container.add_child(bar)
-	bar.owner = root
-	bar.anchor_left = 0.0
-	bar.anchor_top = 0.0
-	bar.anchor_right = 1.0
-	bar.anchor_bottom = 1.0
+	bar.position = Vector2(20, 20)
+	bar.custom_minimum_size = Vector2(width, height)
+	bar.size = Vector2(width, height)
 	bar.min_value = 0
 	bar.max_value = 100
 	bar.value = 100
-	return {"result": "Health bar UI created", "path": str(container.get_path())}
+	canvas.add_child(bar)
+	bar.owner = root
+	
+	# Generic - no icons or specific styling, user customizes for their game
+	return {"result": "Health bar UI created with CanvasLayer. Customize styling as needed.", "path": str(canvas.get_path())}
 
 func _spawn_spinning_pickup(params: Dictionary) -> Dictionary:
 	var parent_path = params.get("parent_path", ".")
@@ -2318,15 +2319,19 @@ func _spawn_spinning_pickup(params: Dictionary) -> Dictionary:
 	anim_player.add_animation_library("", lib)
 	anim_player.play("spin")
 	
-	return {"result": "Pickup created with collision, mesh, and spin animation", "path": str(area.get_path())}
+	# No script attached - user adds their own collection logic
+	# Connect body_entered signal to handle pickups in their own way
+	
+	return {"result": "Pickup created with collision, mesh, and spin animation. Connect body_entered signal to add collection logic.", "path": str(area.get_path())}
 
 func _create_trigger_area(params: Dictionary) -> Dictionary:
 	"""Create an Area3D with CollisionShape3D ready to detect bodies."""
 	var parent_path = params.get("parent_path", ".")
-	var name = params.get("name", "TriggerArea")
+	var area_name = params.get("name", "TriggerArea")
 	var shape_type = params.get("shape", "box")  # box, sphere, capsule, cylinder
 	var size = float(params.get("size", 2.0))
 	var monitoring = bool(params.get("monitoring", true))
+	var show_debug = bool(params.get("debug_mesh", false))  # Off by default for production
 	
 	var root = _get_actual_editor_root()
 	if not root: return {"error": "No active scene"}
@@ -2335,7 +2340,7 @@ func _create_trigger_area(params: Dictionary) -> Dictionary:
 	
 	# Create Area3D
 	var area = Area3D.new()
-	area.name = name
+	area.name = area_name
 	area.monitoring = monitoring
 	area.monitorable = true
 	parent.add_child(area)
@@ -2374,20 +2379,21 @@ func _create_trigger_area(params: Dictionary) -> Dictionary:
 	area.add_child(col)
 	col.owner = root
 	
-	# Add debug visualization (optional mesh)
-	var mesh_inst = MeshInstance3D.new()
-	mesh_inst.name = "DebugMesh"
-	var box_mesh = BoxMesh.new()
-	box_mesh.size = Vector3(size, size, size) if shape_type == "box" else Vector3(size, size, size)
-	mesh_inst.mesh = box_mesh
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.2, 0.8, 0.2, 0.3)  # Green transparent
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh_inst.material_override = mat
-	area.add_child(mesh_inst)
-	mesh_inst.owner = root
+	# Optional debug visualization (disabled by default)
+	if show_debug:
+		var mesh_inst = MeshInstance3D.new()
+		mesh_inst.name = "DebugMesh"
+		var debug_mesh = BoxMesh.new()
+		debug_mesh.size = Vector3(size, size, size)
+		mesh_inst.mesh = debug_mesh
+		var mat = StandardMaterial3D.new()
+		mat.albedo_color = Color(0.2, 0.8, 0.2, 0.3)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mesh_inst.material_override = mat
+		area.add_child(mesh_inst)
+		mesh_inst.owner = root
 	
-	return {"result": "Trigger area created with collision shape", "path": str(area.get_path()), "note": "Connect body_entered/body_exited signals to detect objects"}
+	return {"result": "Trigger area created. Connect body_entered/body_exited signals.", "path": str(area.get_path())}
 
 func _create_rigidbody(params: Dictionary) -> Dictionary:
 	"""Create a RigidBody3D with CollisionShape3D and mesh."""

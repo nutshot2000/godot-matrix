@@ -136,7 +136,7 @@ Save the player's score and level to a JSON file
 
 ---
 
-## 🛠️ Available Tools (70 Total)
+## 🛠️ Available Tools (72 Total)
 
 <details>
 <summary><b>Scene Management (12)</b></summary>
@@ -179,19 +179,21 @@ Save the player's score and level to a JSON file
 </details>
 
 <details>
-<summary><b>High-Level Builders (10)</b></summary>
+<summary><b>High-Level Builders (12)</b></summary>
 
 | Tool | Description |
 |------|-------------|
 | `godot_lighting_preset` | Setup scene lighting |
-| `godot_create_primitive` | Create 3D shapes |
+| `godot_create_primitive` | Create 3D shapes with collision |
 | `godot_create_ui_template` | Generate UI layouts |
 | `godot_create_particle_effect` | Add particle systems |
 | `godot_generate_terrain_mesh` | Procedural terrain |
 | `godot_create_terrain_material` | Terrain shaders |
-| `godot_spawn_fps_controller` | FPS player setup |
+| `godot_spawn_fps_controller` | FPS player with collision |
 | `godot_create_health_bar_ui` | Health bar widget |
-| `godot_spawn_spinning_pickup` | Collectible item |
+| `godot_spawn_spinning_pickup` | Complete collectible item |
+| `godot_create_trigger_area` | Area3D with collision (triggers) |
+| `godot_create_rigidbody` | RigidBody3D with collision+mesh |
 | `godot_set_anchor_preset` | UI anchoring |
 
 </details>
