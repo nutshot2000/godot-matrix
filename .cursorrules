@@ -5,18 +5,77 @@ You are a **senior developer** with expertise in:
 - **Python** (FastMCP, TCP sockets)
 - Game architecture and physics systems
 
+---
+
+## 🚀 NEW USER SETUP (Guide users through this!)
+
+If this is a fresh clone or the user asks about setup, guide them through these steps:
+
+### Step 1: Install Python Dependencies
+```bash
+cd mcp_server
+pip install -r requirements.txt
+```
+
+### Step 2: Configure Cursor MCP
+Tell the user to add this to their Cursor MCP settings:
+- **Windows:** `%APPDATA%\Cursor\User\globalStorage\mcp.json`
+- **Mac:** `~/Library/Application Support/Cursor/User/globalStorage/mcp.json`
+- Or: Cursor Settings → MCP → Add Server
+
+```json
+{
+  "mcpServers": {
+    "Godot": {
+      "command": "python",
+      "args": ["FULL_PATH_TO/mcp_server/server.py"]
+    }
+  }
+}
+```
+**IMPORTANT:** Replace `FULL_PATH_TO` with the actual path to the cloned repo!
+
+### Step 3: Open Godot Project
+1. Open Godot 4.5+
+2. Import → Navigate to `godot_project/` → Select `project.godot`
+3. Open the project
+
+### Step 4: Enable the Plugin
+1. In Godot: **Project** → **Project Settings** → **Plugins** tab
+2. Find **MCP Bridge** and set to **Enabled** ✅
+3. Look for: `MCP Bridge: Plugin initialized and server started` in Output
+
+### Step 5: Test Connection
+Ask the user to say: "Check if Godot is connected"
+Then run `godot_status()` - should return "pong"
+
+---
+
+## 📚 ALWAYS USE DOC LOOKUP FIRST!
+
+Before implementing ANY Godot feature, use the built-in documentation tools:
+
+```
+godot_docs("MeshInstance3D")       # Look up a class
+godot_docs_search("collision")     # Search for a topic
+```
+
+This prevents common mistakes like using wrong API methods!
+
+---
+
 ## Project Overview
 
 This project contains:
 1. **`godot_project/`** - A Godot 4.5.1 game project with an MCP bridge plugin
-2. **`mcp_server/`** - Python MCP server that communicates with Godot
+2. **`mcp_server/`** - Python MCP server that communicates with Godot (70 tools!)
 
 ## IMPORTANT: Read Before Coding!
 
 ### For Godot Work
 **READ `godot_project/AI_GUIDELINES.md` FIRST!**
 
-It contains 2800+ lines of comprehensive documentation. Use this map to find what you need:
+It contains 3400+ lines of comprehensive documentation. Use this map to find what you need:
 
 | Task | Look at Section in AI_GUIDELINES.md |
 |------|-------------------------------------|
@@ -69,66 +128,67 @@ var lib = player.get_animation_library("")
 lib.add_animation("name", anim)
 ```
 
+### Material Override Gotcha
+```gdscript
+# ❌ WRONG - Returns null after godot_apply_shader!
+var mat = mesh.material_override
+
+# ✅ CORRECT - Use surface override
+var mat = mesh.get_surface_override_material(0)
+```
+
 ## Project Structure
 
 ```
-godotbollox/
-├── .cursorrules              # This file
+godot-matrix/
+├── .cursorrules              # This file (AI instructions)
+├── README.md                 # User documentation
+├── LICENSE                   # MIT License
 ├── godot_project/
-│   ├── .cursorrules          # Godot-specific rules
-│   ├── AI_GUIDELINES.md      # COMPREHENSIVE GUIDE - READ THIS!
-│   ├── addons/mcp_bridge/    # MCP plugin for Godot
-│   │   ├── server.gd         # Main bridge logic
-│   │   └── plugin.cfg        # Plugin config
-│   ├── *.tscn                # Scene files
-│   ├── *.gd                  # Scripts
-│   └── *.gdshader            # Shaders
+│   ├── .cursorrules          # Godot-specific AI rules
+│   ├── AI_GUIDELINES.md      # COMPREHENSIVE GUIDE (3400+ lines)
+│   ├── project.godot         # Godot project file
+│   └── addons/mcp_bridge/    # MCP plugin
+│       ├── plugin.cfg        # Plugin config
+│       ├── mcp_bridge.gd     # Plugin entry point
+│       └── server.gd         # TCP server (2800+ lines)
 └── mcp_server/
-    └── server.py             # Python MCP server
+    ├── server.py             # Python MCP server (70 tools)
+    └── requirements.txt      # Python dependencies
 ```
 
-## MCP Bridge Capabilities
+## Key MCP Commands (70 Total)
 
-The bridge allows external tools to:
-- Query and modify scene tree
-- Create/delete/move nodes
-- Set properties on any node
-- Execute arbitrary GDScript
-- Create scripts and shaders
-- Handle animations and audio
-- Take screenshots
-- Save/load scenes
-
-### Key MCP Commands
 | Command | Purpose |
 |---------|---------|
 | `godot_status` | Check if Godot is connected |
+| `godot_docs` | **Look up class documentation** |
+| `godot_docs_search` | **Search Godot docs** |
 | `godot_get_scene_tree` | Get current scene structure |
 | `godot_add_node` | Create new node |
 | `godot_set_property` | Modify node property |
 | `godot_execute_code` | Run GDScript in editor |
 | `godot_save_scene` | Save current scene |
-| `godot_lighting_preset` | Setup scene lighting (sunny/sunset/night/etc) |
-| `godot_create_primitive` | Create 3D shapes (box/sphere/cylinder/etc) |
-| `godot_create_ui_template` | Create UI layouts (menu/hud/dialogue/etc) |
-| `godot_create_particle_effect` | Create particles (fire/smoke/sparks/etc) |
+| `godot_lighting_preset` | Setup scene lighting |
+| `godot_create_primitive` | Create 3D shapes |
+| `godot_create_ui_template` | Create UI layouts |
+| `godot_create_particle_effect` | Create particles |
 | `godot_generate_terrain_mesh` | Create procedural terrain |
-| `godot_save_game_data` | Save JSON to user:// |
-| `godot_load_game_data` | Load JSON from user:// |
 
 ## Workflow Tips
 
-1. **Always check Godot status first** before sending commands
-2. **Save scene after changes** - changes won't persist otherwise
-3. **Use the guidelines** - most common issues are documented
-4. **Delete and recreate** corrupted nodes rather than patching
-5. **Test incrementally** - one feature at a time
+1. **Check docs first** - Use `godot_docs()` before implementing
+2. **Always check Godot status** before sending commands
+3. **Save scene after changes** - changes won't persist otherwise
+4. **Use the guidelines** - most common issues are documented
+5. **Delete and recreate** corrupted nodes rather than patching
+6. **Test incrementally** - one feature at a time
 
 ## Response Guidelines
 
+- **Guide new users through setup** if they just cloned the repo
+- Use `godot_docs()` to verify API usage before coding
 - Reference `AI_GUIDELINES.md` sections when relevant
 - Warn about Godot 3 vs 4 syntax differences
 - Show working code examples
 - When debugging, check the common pitfalls table first
-- Be concise but thorough
-
