@@ -1,6 +1,8 @@
 import socket
 import json
 import re
+import base64
+import os
 from mcp.server.fastmcp import FastMCP
 
 # Optional imports for doc lookup (graceful fallback if not installed)
@@ -16,6 +18,35 @@ mcp = FastMCP("Godot Integration")
 
 GODOT_HOST = "127.0.0.1"
 GODOT_PORT = 42069
+
+def normalize_godot_path(path: str) -> str:
+    """
+    Normalize a file path to Godot's res:// format.
+    Handles:
+    - Already valid res:// paths
+    - Workspace-relative paths like "godot_project/file.gd"
+    - Plain filenames like "file.gd"
+    """
+    if path.startswith("res://"):
+        return path
+    
+    # Handle paths with "godot_project/" prefix (common when workspace root != project root)
+    if "godot_project/" in path:
+        # Extract the part after godot_project/
+        idx = path.find("godot_project/")
+        relative_path = path[idx + len("godot_project/"):]
+        return f"res://{relative_path}"
+    
+    # Handle paths with "godot_project\\" (Windows backslashes)
+    if "godot_project\\" in path:
+        idx = path.find("godot_project\\")
+        relative_path = path[idx + len("godot_project\\"):].replace("\\", "/")
+        return f"res://{relative_path}"
+    
+    # If it's just a plain path, assume it's relative to res://
+    # Remove leading slashes/dots
+    clean_path = path.lstrip("./\\")
+    return f"res://{clean_path}"
 
 def send_to_godot(method: str, params: dict = None) -> dict:
     """Helper to send JSON commands to the Godot plugin via TCP."""
@@ -48,6 +79,26 @@ def send_to_godot(method: str, params: dict = None) -> dict:
             
     except Exception as e:
         return {"error": f"Communication error: {str(e)}"}
+
+@mcp.tool()
+def godot_write_binary_file(path: str, content_base64: str) -> str:
+    """
+    Write binary content (base64 encoded) to a file in the Godot project.
+    Args:
+        path: Resource path (e.g. "res://assets/image.png").
+        content_base64: Base64 encoded string of the binary content.
+    """
+    normalized_path = normalize_godot_path(path)
+    # Pass the base64 string directly to Godot
+    # GDScript has Marshalls.base64_to_raw() to handle it efficiently
+    response = send_to_godot("write_binary_file", {
+        "path": normalized_path, 
+        "content_base64": content_base64
+    })
+    
+    if "error" in response:
+        return f"Error: {response['error']}"
+    return response.get("result")
 
 @mcp.tool()
 def godot_status() -> str:
@@ -151,10 +202,11 @@ def godot_create_script(path: str, content: str) -> str:
     """
     Create or overwrite a GDScript file.
     Args:
-        path: Full resource path (e.g. "res://player.gd").
+        path: Resource path (e.g. "res://player.gd" or "godot_project/player.gd").
         content: The content of the script.
     """
-    response = send_to_godot("save_script", {"path": path, "content": content})
+    normalized_path = normalize_godot_path(path)
+    response = send_to_godot("save_script", {"path": normalized_path, "content": content})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
@@ -185,6 +237,33 @@ def godot_reparent_node(path: str, new_parent_path: str) -> str:
     return response.get("result")
 
 @mcp.tool()
+def godot_move_node(path: str, index: int) -> str:
+    """
+    Move a node to a specific index among its siblings (useful for 2D Z-ordering).
+    Args:
+        path: Path to the node.
+        index: The new index (0 = bottom/back, -1 = top/front).
+    """
+    response = send_to_godot("move_node", {"path": path, "index": index})
+    if "error" in response:
+        return f"Error: {response['error']}"
+    return response.get("result")
+
+@mcp.tool()
+def godot_set_shader_param(path: str, param: str, value: str) -> str:
+    """
+    Set a shader uniform value on a node's material.
+    Args:
+        path: Path to the node.
+        param: Name of the shader uniform.
+        value: Value (as string, e.g. "1.0", "1,0,0,1", "true").
+    """
+    response = send_to_godot("set_shader_param", {"path": path, "param": param, "value": value})
+    if "error" in response:
+        return f"Error: {response['error']}"
+    return response.get("result")
+
+@mcp.tool()
 def godot_instantiate_scene(path: str, parent_path: str = ".") -> str:
     """
     Instantiate a .tscn file into the current scene.
@@ -192,19 +271,24 @@ def godot_instantiate_scene(path: str, parent_path: str = ".") -> str:
         path: Resource path (e.g. "res://enemy.tscn").
         parent_path: Where to add it (defaults to root).
     """
-    response = send_to_godot("instantiate_scene", {"path": path, "parent_path": parent_path})
+    normalized_path = normalize_godot_path(path)
+    response = send_to_godot("instantiate_scene", {"path": normalized_path, "parent_path": parent_path})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
 
 @mcp.tool()
-def godot_save_scene(path: str = "") -> str:
+def godot_save_scene(path: str = "", ignore_safety: bool = False) -> str:
     """
     Save the current scene.
     Args:
-        path: (Optional) Path to save to (e.g. "res://main.tscn"). If empty, uses current filename.
+        path: (Optional) Path to save to (e.g. "res://main.tscn").
+              If empty, saves the currently open scene to its existing file.
+              If provided, it performs a 'Save As' operation.
+        ignore_safety: (Optional) Set to True to overwrite existing files that don't match the current scene.
     """
-    response = send_to_godot("save_scene", {"path": path})
+    normalized_path = normalize_godot_path(path) if path else ""
+    response = send_to_godot("save_scene", {"path": normalized_path, "ignore_safety": ignore_safety})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
@@ -214,9 +298,10 @@ def godot_read_script(path: str) -> str:
     """
     Read the content of a GDScript file.
     Args:
-        path: Resource path (e.g. "res://player.gd").
+        path: Resource path (e.g. "res://player.gd" or "godot_project/player.gd").
     """
-    response = send_to_godot("read_script", {"path": path})
+    normalized_path = normalize_godot_path(path)
+    response = send_to_godot("read_script", {"path": normalized_path})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("content")
@@ -306,7 +391,8 @@ def godot_create_folder(path: str) -> str:
     Args:
         path: Folder path (must start with res://).
     """
-    response = send_to_godot("create_folder", {"path": path})
+    normalized_path = normalize_godot_path(path)
+    response = send_to_godot("create_folder", {"path": normalized_path})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
@@ -319,7 +405,8 @@ def godot_create_shader(path: str, code: str) -> str:
         path: Resource path (e.g. "res://water.gdshader").
         code: The shader code.
     """
-    response = send_to_godot("create_shader", {"path": path, "code": code})
+    normalized_path = normalize_godot_path(path)
+    response = send_to_godot("create_shader", {"path": normalized_path, "code": code})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
@@ -332,7 +419,8 @@ def godot_apply_shader(node_path: str, shader_path: str) -> str:
         node_path: Path to the target node (MeshInstance3D, etc).
         shader_path: Path to the .gdshader file.
     """
-    response = send_to_godot("apply_shader", {"node_path": node_path, "shader_path": shader_path})
+    normalized_shader_path = normalize_godot_path(shader_path)
+    response = send_to_godot("apply_shader", {"node_path": node_path, "shader_path": normalized_shader_path})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
@@ -383,7 +471,8 @@ def godot_open_scene(path: str) -> str:
     Args:
         path: Resource path to the scene (e.g. "res://levels/level1.tscn").
     """
-    response = send_to_godot("open_scene", {"path": path})
+    normalized_path = normalize_godot_path(path)
+    response = send_to_godot("open_scene", {"path": normalized_path})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
@@ -538,11 +627,12 @@ def godot_create_audio_player(
     """
     Create an AudioStreamPlayer or AudioStreamPlayer3D, optionally assigning a stream.
     """
+    normalized_audio_path = normalize_godot_path(audio_path) if audio_path else ""
     response = send_to_godot("create_audio_player", {
         "parent_path": parent_path,
         "name": name,
         "is_3d": is_3d,
-        "audio_path": audio_path,
+        "audio_path": normalized_audio_path,
         "autoplay": autoplay,
         "play_now": play_now,
     })
@@ -591,7 +681,8 @@ def godot_attach_script(node_path: str, script_path: str) -> str:
         node_path: Path to the node (e.g. "Player").
         script_path: Resource path to the script (e.g. "res://player.gd").
     """
-    response = send_to_godot("attach_script", {"node_path": node_path, "script_path": script_path})
+    normalized_script_path = normalize_godot_path(script_path)
+    response = send_to_godot("attach_script", {"node_path": node_path, "script_path": normalized_script_path})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
@@ -703,6 +794,37 @@ def godot_search_files(query: str, extension: str = "") -> str:
         return f"Error: {response['error']}"
     return json.dumps(response.get("files", []), indent=2)
 
+@mcp.tool()
+def godot_file_exists(path: str) -> str:
+    """
+    Check if a file exists in the Godot project.
+    Args:
+        path: Resource path (e.g. "res://player.gd").
+    """
+    normalized_path = normalize_godot_path(path)
+    response = send_to_godot("file_exists", {"path": normalized_path})
+    if "error" in response:
+        return f"Error: {response['error']}"
+    return "true" if response.get("exists") else "false"
+
+@mcp.tool()
+def godot_set_collision_layer(node_path: str, layer_number: int, value: bool) -> str:
+    """
+    Set a collision layer or mask bit (1-32) for a CollisionObject3D/2D.
+    Args:
+        node_path: Path to the node (e.g. "Player").
+        layer_number: Layer number (1-32).
+        value: True to enable, False to disable.
+    """
+    response = send_to_godot("set_collision_layer", {
+        "node_path": node_path, 
+        "layer": layer_number, 
+        "value": value
+    })
+    if "error" in response:
+        return f"Error: {response['error']}"
+    return response.get("result")
+
 # ============ UID Conversion ============
 
 @mcp.tool()
@@ -718,13 +840,13 @@ def godot_uid(value: str) -> str:
         if "error" in response:
             return f"Error: {response['error']}"
         return response.get("path")
-    elif value.startswith("res://"):
-        response = send_to_godot("path_to_uid", {"path": value})
+    else:
+        # Assume it's a path (or normalize it to one)
+        normalized_path = normalize_godot_path(value)
+        response = send_to_godot("path_to_uid", {"path": normalized_path})
         if "error" in response:
             return f"Error: {response['error']}"
         return response.get("uid")
-    else:
-        return "Error: Value must start with 'uid://' or 'res://'"
 
 # ============ Scene File Content ============
 
@@ -746,7 +868,8 @@ def godot_delete_scene(path: str) -> str:
     Args:
         path: Path to the scene file (e.g. "res://levels/level1.tscn").
     """
-    response = send_to_godot("delete_scene", {"path": path})
+    normalized_path = normalize_godot_path(path)
+    response = send_to_godot("delete_scene", {"path": normalized_path})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
@@ -759,9 +882,11 @@ def godot_duplicate_scene(source_path: str, dest_path: str) -> str:
         source_path: Existing .tscn scene path.
         dest_path: New .tscn scene path.
     """
+    normalized_source = normalize_godot_path(source_path)
+    normalized_dest = normalize_godot_path(dest_path)
     response = send_to_godot("duplicate_scene", {
-        "source_path": source_path,
-        "dest_path": dest_path,
+        "source_path": normalized_source,
+        "dest_path": normalized_dest,
     })
     if "error" in response:
         return f"Error: {response['error']}"
@@ -772,9 +897,11 @@ def godot_rename_scene(old_path: str, new_path: str) -> str:
     """
     Rename a scene file.
     """
+    normalized_old = normalize_godot_path(old_path)
+    normalized_new = normalize_godot_path(new_path)
     response = send_to_godot("rename_scene", {
-        "old_path": old_path,
-        "new_path": new_path,
+        "old_path": normalized_old,
+        "new_path": normalized_new,
     })
     if "error" in response:
         return f"Error: {response['error']}"
@@ -789,10 +916,13 @@ def godot_replace_resource_in_scene(scene_path: str, old_resource: str, new_reso
         old_resource: Existing resource path to replace.
         new_resource: New resource path.
     """
+    normalized_scene = normalize_godot_path(scene_path)
+    normalized_old = normalize_godot_path(old_resource)
+    normalized_new = normalize_godot_path(new_resource)
     response = send_to_godot("replace_resource_in_scene", {
-        "scene_path": scene_path,
-        "old_resource": old_resource,
-        "new_resource": new_resource,
+        "scene_path": normalized_scene,
+        "old_resource": normalized_old,
+        "new_resource": normalized_new,
     })
     if "error" in response:
         return f"Error: {response['error']}"
@@ -852,9 +982,10 @@ def godot_spawn_spinning_pickup(parent_path: str = ".", scene_path: str = "res:/
     """
     Spawn a spinning pickup instance, by default using res://coin.tscn.
     """
+    normalized_scene_path = normalize_godot_path(scene_path)
     response = send_to_godot("spawn_spinning_pickup", {
         "parent_path": parent_path,
-        "scene_path": scene_path,
+        "scene_path": normalized_scene_path,
     })
     if "error" in response:
         return f"Error: {response['error']}"
@@ -916,11 +1047,12 @@ def godot_edit_file(path: str, find: str, replace: str) -> str:
     """
     Edit a file by finding and replacing text.
     Args:
-        path: Path to the file (e.g. "res://player.gd").
+        path: Path to the file (e.g. "res://player.gd" or "godot_project/player.gd").
         find: Text to find.
         replace: Text to replace with.
     """
-    response = send_to_godot("edit_file", {"path": path, "find": find, "replace": replace})
+    normalized_path = normalize_godot_path(path)
+    response = send_to_godot("edit_file", {"path": normalized_path, "find": find, "replace": replace})
     if "error" in response:
         return f"Error: {response['error']}"
     return response.get("result")
@@ -996,8 +1128,9 @@ def godot_create_terrain_material(
         - texture_grass, texture_dirt, texture_rock, texture_snow
         - normal_grass, normal_rock, normal_cliff (for normals)
     """
+    normalized_path = normalize_godot_path(path)
     response = send_to_godot("create_terrain_material", {
-        "path": path,
+        "path": normalized_path,
         "type": type,
         "texture_scale": texture_scale,
         "blend_sharpness": blend_sharpness,

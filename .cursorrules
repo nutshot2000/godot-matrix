@@ -174,6 +174,7 @@ godot-matrix/
 | `godot_create_ui_template` | Create UI layouts |
 | `godot_create_particle_effect` | Create particles |
 | `godot_generate_terrain_mesh` | Create procedural terrain |
+| `godot_write_binary_file` | Upload images/assets (base64) |
 
 ## Workflow Tips
 
@@ -183,6 +184,7 @@ godot-matrix/
 4. **Use the guidelines** - most common issues are documented
 5. **Delete and recreate** corrupted nodes rather than patching
 6. **Test incrementally** - one feature at a time
+7. **Scene Safety:** `godot_save_scene` will block overwriting if you are editing a different scene. Use `ignore_safety=True` to override.
 
 ## Response Guidelines
 

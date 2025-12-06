@@ -82,6 +82,10 @@ func _execute_command(cmd: Dictionary) -> Dictionary:
 			return _delete_node(cmd.get("params", {}))
 		"reparent_node":
 			return _reparent_node(cmd.get("params", {}))
+		"move_node":
+			return _move_node(cmd.get("params", {}))
+		"set_shader_param":
+			return _set_shader_param(cmd.get("params", {}))
 		"instantiate_scene":
 			return _instantiate_scene(cmd.get("params", {}))
 		"save_scene":
@@ -140,6 +144,10 @@ func _execute_command(cmd: Dictionary) -> Dictionary:
 			return _get_game_screenshot(cmd.get("params", {}))
 		"search_files":
 			return _search_files(cmd.get("params", {}))
+		"file_exists":
+			return _file_exists(cmd.get("params", {}))
+		"set_collision_layer":
+			return _set_collision_layer(cmd.get("params", {}))
 		"uid_to_path":
 			return _uid_to_path(cmd.get("params", {}))
 		"path_to_uid":
@@ -190,6 +198,8 @@ func _execute_command(cmd: Dictionary) -> Dictionary:
 			return _rename_scene(cmd.get("params", {}))
 		"replace_resource_in_scene":
 			return _replace_resource_in_scene(cmd.get("params", {}))
+		"write_binary_file":
+			return _write_binary_file(cmd.get("params", {}))
 		"spawn_fps_controller":
 			return _spawn_fps_controller(cmd.get("params", {}))
 		"create_health_bar_ui":
@@ -2880,6 +2890,14 @@ func _save_scene(params: Dictionary) -> Dictionary:
 	
 	if path == "": return {"error": "No path provided and scene has no filename"}
 	
+	# SAFETY CHECK: Prevent accidental overwrite of other scene files (AI Footgun)
+	# If we are saving to a DIFFERENT file than the one currently open,
+	# and that file already exists, block it unless explicitly allowed.
+	var ignore_safety = params.get("ignore_safety", false)
+	
+	if not ignore_safety and path != root.scene_file_path and FileAccess.file_exists(path):
+		return {"error": "SAFETY BLOCK: Refusing to overwrite '" + path + "' with content of '" + root.scene_file_path + "'. Set ignore_safety=true to override."}
+	
 	err = ResourceSaver.save(packed_scene, path)
 	if err != OK: return {"error": "Failed to save scene to " + path + ": " + str(err)}
 	
@@ -2996,6 +3014,10 @@ func _save_script(params: Dictionary) -> Dictionary:
 	var path = params.get("path", "")
 	var content = params.get("content", "")
 	if not path.begins_with("res://"): return {"error": "Path must start with res://"}
+	
+	# SAFETY: Prevent self-modification while running
+	if path.ends_with("addons/mcp_bridge/server.gd"):
+		return {"error": "CRITICAL: Cannot edit the active MCP server script (server.gd) while it is running. This will crash the connection."}
 	
 	var file = FileAccess.open(path, FileAccess.WRITE)
 	if not file: return {"error": "Could not write to " + path}
@@ -3143,3 +3165,119 @@ func _execute_script(params: Dictionary) -> Dictionary:
 	
 	return {"result": str(result)}
 
+func _file_exists(params: Dictionary) -> Dictionary:
+	var path = params.get("path", "")
+	if path.is_empty():
+		return {"error": "Path required"}
+	
+	return {"exists": FileAccess.file_exists(path) or DirAccess.dir_exists_absolute(path)}
+
+func _set_collision_layer(params: Dictionary) -> Dictionary:
+	var path = params.get("node_path", "")
+	var layer = params.get("layer", 1)
+	var value = params.get("value", true)
+	
+	if path.is_empty():
+		return {"error": "Node path required"}
+	
+	var root = EditorInterface.get_edited_scene_root()
+	if not root:
+		return {"error": "No scene open"}
+
+	var node = root.get_node_or_null(path) if path != "." else root
+	if not node:
+		return {"error": "Node not found: " + path}
+		
+	if not node is CollisionObject3D and not node is CollisionObject2D:
+		return {"error": "Node is not a CollisionObject (Area, Body, etc)"}
+	
+	# Godot 4 API: set_collision_layer_value(layer_number, value)
+	node.set_collision_layer_value(int(layer), value)
+	
+	return {"result": "Set layer %d to %s on %s" % [layer, value, node.name]}
+
+func _move_node(params: Dictionary) -> Dictionary:
+	var path = params.get("path", "")
+	var index = params.get("index", 0)
+	
+	var root = EditorInterface.get_edited_scene_root()
+	if not root: return {"error": "No scene open"}
+	
+	var node = root.get_node_or_null(path) if path != "." else root
+	if not node: return {"error": "Node not found: " + path}
+	
+	var parent = node.get_parent()
+	if not parent: return {"error": "Cannot move root node"}
+	
+	parent.move_child(node, int(index))
+	return {"result": "Moved " + node.name + " to index " + str(index)}
+
+func _set_shader_param(params: Dictionary) -> Dictionary:
+	var path = params.get("path", "")
+	var param = params.get("param", "")
+	var value_str = str(params.get("value", ""))
+	
+	var root = EditorInterface.get_edited_scene_root()
+	if not root: return {"error": "No scene open"}
+	
+	var node = root.get_node_or_null(path) if path != "." else root
+	if not node: return {"error": "Node not found: " + path}
+	
+	# Try to find a material
+	var mat = null
+	
+	# 1. Check material_override (BaseGeometry3D, CanvasItem)
+	if "material_override" in node and node.material_override:
+		mat = node.material_override
+	# 2. Check material (CanvasItem)
+	elif "material" in node and node.material:
+		mat = node.material
+	# 3. Check surface override (MeshInstance3D)
+	elif node.has_method("get_surface_override_material"):
+		mat = node.get_surface_override_material(0)
+		
+	if not mat:
+		return {"error": "No material found on node"}
+		
+	if not mat is ShaderMaterial:
+		return {"error": "Material is not a ShaderMaterial"}
+		
+	var val = _parse_shader_value(value_str)
+	mat.set_shader_parameter(param, val)
+	
+	return {"result": "Set " + param + " to " + value_str}
+
+func _parse_shader_value(s: String):
+	if s == "true": return true
+	if s == "false": return false
+	if "," in s:
+		var parts = s.split(",")
+		if len(parts) == 2: return Vector2(float(parts[0]), float(parts[1]))
+		if len(parts) == 3: return Vector3(float(parts[0]), float(parts[1]), float(parts[2]))
+		if len(parts) == 4: return Color(float(parts[0]), float(parts[1]), float(parts[2]), float(parts[3]))
+	if s.is_valid_float(): return float(s)
+	return s
+
+func _write_binary_file(params: Dictionary) -> Dictionary:
+	var path = params.get("path", "")
+	var content_b64 = params.get("content_base64", "")
+	
+	if path == "": return {"error": "Path required"}
+	if content_b64 == "": return {"error": "Content required"}
+	
+	# Decode Base64 to PackedByteArray
+	var bytes = Marshalls.base64_to_raw(content_b64)
+	if bytes == null:
+		return {"error": "Invalid base64 content"}
+		
+	var file = FileAccess.open(path, FileAccess.WRITE)
+	if not file:
+		return {"error": "Could not open file for writing: " + path}
+		
+	file.store_buffer(bytes)
+	file.close()
+	
+	# Trigger filesystem scan so Godot sees the new file immediately
+	EditorInterface.get_resource_filesystem().scan()
+	
+	return {"result": "Successfully wrote " + str(bytes.size()) + " bytes to " + path}

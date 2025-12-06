@@ -585,6 +585,10 @@ button.pressed.connect(func(): print("Pressed!"))
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
+| **Grey Screen** | **Missing Camera** | **Always add a `Camera3D` to new scenes.** |
+| **Save Refused (Safety Block)** | **Editing different scene** | **Open scene via `godot_open_scene` or update `scene_file_path` before saving.** |
+| **"Unexpected NUL" in plugin** | **Corrupt file write** | **NEVER edit `server.gd` while it's running/hot. Use strict atomic edits.** |
+| **Binary Write Fail** | **Encoding/Path** | **Use `godot_write_binary_file` with base64 content.** |
 | Grey untextured mesh | No material assigned | Create and assign `StandardMaterial3D` |
 | Signal not firing | `monitoring = false` or not connected | Enable monitoring, connect in `_ready()` |
 | Node not found | Wrong path or scene renamed | Use `get_node_or_null()`, verify root name |
@@ -599,6 +603,17 @@ button.pressed.connect(func(): print("Pressed!"))
 | **Shader params not working** | **Using `material_override` (null)** | **Use `get_surface_override_material(0)`** |
 | **NoiseTexture2D is white/blank** | **Texture generates async** | **Use `await texture.changed`** |
 | **Terrain/mesh stays white** | **Textures not ready** | **Wait for async generation** |
+| **Player moves/drifts on own** | **Child node (Gun) has collision** | **Disable collision on attachments (use MeshInstance3D)** |
+| **"Invalid assignment" on instantiated node** | **Script not attached to .tscn** | **Attach script to root node before saving scene** |
+| **Script inherits from 'Node2D/3D' mismatch** | **Wrong root node type** | **Ensure scene root matches script base type** |
+| **"Removing CollisionObject during physics..."** | **`queue_free` in collision signal** | **Use `call_deferred("queue_free")`** |
+| **All instances flash/change color together** | **Shared Resource (Material)** | **Call `material = material.duplicate()` in `_ready()`** |
+| **`duplicate()` on null instance** | **Material doesn't exist on node** | **Check `if material: material = material.duplicate()`** |
+| **2D Background covers sprites** | **Node2D draw order (Bottom=Front)** | **Move background node to top of list (Index 0)** |
+| **`SCREEN_TEXTURE` shader error** | **Godot 4.x removed built-in** | **Add `uniform sampler2D SCREEN_TEXTURE : hint_screen_texture;`** |
+| **`godot_read_script` returns wrong file** | **File corruption or caching** | **Recreate scene file using `godot_new_scene` + `godot_add_node`** |
+| **`godot_save_scene` Error 19** | **Transient editor state issue** | **Retry save, or close/reopen scene manually** |
+| **Player sinks into floor** | **Collision shape centered** | **Offset collision shape down: `position = Vector2(0, height/2)`** |
 
 ### ⚠️ CRITICAL: NoiseTexture2D Generates Asynchronously
 
@@ -741,6 +756,12 @@ The MCP server includes built-in Godot documentation lookup. **Always check docs
 ### Overview
 The `server.gd` plugin in `addons/mcp_bridge/` enables external tools to control Godot via TCP.
 
+### ⚠️ Note on File Paths
+The MCP tools automatically normalize paths. You can use:
+- `res://path/to/file.gd` (Best)
+- `godot_project/path/to/file.gd` (Local workspace path)
+- `file.gd` (Relative to project root)
+
 ### Full Command Reference
 
 | Method | Parameters | Description |
@@ -772,6 +793,7 @@ The `server.gd` plugin in `addons/mcp_bridge/` enables external tools to control
 | `create_ui_template` | template | Create UI layout |
 | `save_game_data` | filename, data | Save JSON to user:// |
 | `load_game_data` | filename | Load JSON from user:// |
+| `godot_write_binary_file` | path, content_base64 | Upload binary data (images, etc) |
 
 ### Best Practices for MCP
 1. **Always save** after making changes: Call `save_scene` to persist.
@@ -779,6 +801,8 @@ The `server.gd` plugin in `addons/mcp_bridge/` enables external tools to control
 3. **Use `execute_script`** for complex multi-step operations.
 4. **Reload plugin** if script changes don't apply.
 5. **Check paths** before operations - use `get_scene_tree` to verify structure.
+6. **Avoid `EditorInterface` name conflict:** In `execute_script`, the wrapper argument is named `EditorInterface`. This shadows the global class. Access it directly or be aware of the instance.
+7. **Writing Binary Files:** Use `godot_write_binary_file` for images/assets. Python must base64 encode content first. Godot handles decoding automatically.
 
 ---
 
@@ -1158,9 +1182,9 @@ func shoot():
     
     var result = space_state.intersect_ray(query)
     if result:
-        print("Hit: ", result.collider.name)
-        print("Position: ", result.position)
-        print("Normal: ", result.normal)
+		print("Hit: ", result.collider.name)
+		print("Position: ", result.position)
+		print("Normal: ", result.normal)
 ```
 
 ### Common Raycast Uses
@@ -1298,9 +1322,9 @@ func _physics_process(delta):
             _attacking_state(delta)
 
 func _idle_state(delta):
-    if Input.is_action_pressed("move_forward"):
+	if Input.is_action_pressed("move_forward"):
         change_state(State.WALKING)
-    if Input.is_action_just_pressed("jump"):
+	if Input.is_action_just_pressed("jump"):
         change_state(State.JUMPING)
 
 func change_state(new_state: State):
@@ -1316,7 +1340,7 @@ func change_state(new_state: State):
         State.JUMPING:
             velocity.y = JUMP_VELOCITY
         State.ATTACKING:
-            $AnimationPlayer.play("attack")
+			$AnimationPlayer.play("attack")
 ```
 
 ---
@@ -1330,16 +1354,16 @@ Best for: Settings, preferences, simple key-value data.
 # Saving settings
 func save_settings():
     var config = ConfigFile.new()
-    config.set_value("audio", "master_volume", 0.8)
-    config.set_value("audio", "sfx_volume", 1.0)
-    config.set_value("video", "fullscreen", true)
-    config.set_value("video", "resolution", "1920x1080")
-    config.save("user://settings.cfg")
+	config.set_value("audio", "master_volume", 0.8)
+	config.set_value("audio", "sfx_volume", 1.0)
+	config.set_value("video", "fullscreen", true)
+	config.set_value("video", "resolution", "1920x1080")
+	config.save("user://settings.cfg")
 
 # Loading settings
 func load_settings():
     var config = ConfigFile.new()
-    var err = config.load("user://settings.cfg")
+	var err = config.load("user://settings.cfg")
     if err != OK:
 		return  # File doesn't exist yet
 	
@@ -2430,11 +2454,11 @@ func shake(amount: float):
 ```gdscript
 func zoom_in():
     var tween = create_tween()
-    tween.tween_property(camera, "zoom", Vector2(2, 2), 0.3)
+	tween.tween_property(camera, "zoom", Vector2(2, 2), 0.3)
 
 func zoom_out():
     var tween = create_tween()
-    tween.tween_property(camera, "zoom", Vector2(1, 1), 0.3)
+	tween.tween_property(camera, "zoom", Vector2(1, 1), 0.3)
 ```
 
 ---
@@ -2456,11 +2480,11 @@ Player (CharacterBody2D)
 func _physics_process(delta):
     # Play based on state
     if not is_on_floor():
-        anim.play("jump")
+		anim.play("jump")
     elif velocity.x != 0:
-        anim.play("run")
+		anim.play("run")
     else:
-        anim.play("idle")
+		anim.play("idle")
     
     # Flip based on direction
     if velocity.x > 0:
@@ -2469,7 +2493,7 @@ func _physics_process(delta):
         anim.flip_h = true
 
 func attack():
-    anim.play("attack")
+	anim.play("attack")
     await anim.animation_finished
     # Attack animation done, resume normal
 ```
@@ -2480,17 +2504,17 @@ func create_animation():
     var frames = SpriteFrames.new()
     
     # Add animation
-    frames.add_animation("walk")
-    frames.set_animation_speed("walk", 10)  # FPS
-    frames.set_animation_loop("walk", true)
+	frames.add_animation("walk")
+	frames.set_animation_speed("walk", 10)  # FPS
+	frames.set_animation_loop("walk", true)
     
     # Add frames (from sprite sheet)
-    var texture = load("res://player_sheet.png")
+	var texture = load("res://player_sheet.png")
     for i in range(4):
         var atlas = AtlasTexture.new()
         atlas.atlas = texture
         atlas.region = Rect2(i * 32, 0, 32, 32)
-        frames.add_frame("walk", atlas)
+		frames.add_frame("walk", atlas)
     
     $AnimatedSprite2D.sprite_frames = frames
 ```
@@ -2509,8 +2533,8 @@ func _ready():
     body_entered.connect(_on_body_entered)
 
 func _on_body_entered(body):
-    if body.name == "Player" or body.is_in_group("player"):
-        if body.has_method("add_coins"):
+	if body.name == "Player" or body.is_in_group("player"):
+		if body.has_method("add_coins"):
             body.add_coins(value)
         queue_free()
 ```
@@ -2526,7 +2550,7 @@ func _ready():
     body_entered.connect(_on_body_entered)
 
 func _on_body_entered(body):
-    if body.has_method("take_damage"):
+	if body.has_method("take_damage"):
         var knockback_dir = (body.global_position - global_position).normalized()
         body.take_damage(damage, knockback_dir * knockback_force)
 ```
@@ -2539,7 +2563,7 @@ func _ready():
     body_entered.connect(_on_body_entered)
 
 func _on_body_entered(body):
-    if body.name == "Player":
+	if body.name == "Player":
         # Respawn or game over
         body.die()
 ```
@@ -2552,7 +2576,7 @@ var ladder_top: float = 0.0
 
 func _on_ladder_area_entered(area):
     in_ladder = true
-    ladder_top = area.global_position.y - area.get_node("CollisionShape2D").shape.size.y / 2
+	ladder_top = area.global_position.y - area.get_node("CollisionShape2D").shape.size.y / 2
 
 func _on_ladder_area_exited(area):
     in_ladder = false
@@ -2560,7 +2584,7 @@ func _on_ladder_area_exited(area):
 func _physics_process(delta):
     if in_ladder:
         # Disable gravity, allow up/down movement
-        var climb_dir = Input.get_axis("move_up", "move_down")
+		var climb_dir = Input.get_axis("move_up", "move_down")
         velocity.y = climb_dir * CLIMB_SPEED
         velocity.x = 0
     else:
@@ -2725,11 +2749,11 @@ var cursor_talk = preload("res://cursors/talk.png")
 
 func set_cursor(type: String):
     match type:
-        "default":
+		"default":
             Input.set_custom_mouse_cursor(cursor_default)
-        "interact":
+		"interact":
             Input.set_custom_mouse_cursor(cursor_interact)
-        "talk":
+		"talk":
             Input.set_custom_mouse_cursor(cursor_talk)
 ```
 
@@ -2763,8 +2787,8 @@ func raycast_from_mouse():
     
     var result = space.intersect_ray(query)
     if result:
-        print("Hit: ", result.collider.name)
-        print("At: ", result.position)
+		print("Hit: ", result.collider.name)
+		print("At: ", result.position)
 ```
 
 ### Ground Check (Platformer)
@@ -2847,7 +2871,7 @@ func apply_gravity(delta):
         coyote_timer = COYOTE_TIME
 
 func handle_jump():
-    if Input.is_action_just_pressed("jump"):
+	if Input.is_action_just_pressed("jump"):
         jump_buffer_timer = JUMP_BUFFER
     else:
         jump_buffer_timer -= get_physics_process_delta_time()
@@ -2858,11 +2882,11 @@ func handle_jump():
         jump_buffer_timer = 0
     
     # Variable jump height
-    if Input.is_action_just_released("jump") and velocity.y < 0:
+	if Input.is_action_just_released("jump") and velocity.y < 0:
         velocity.y *= 0.5
 
 func handle_movement(delta):
-    var direction = Input.get_axis("move_left", "move_right")
+	var direction = Input.get_axis("move_left", "move_right")
     
     if direction:
         velocity.x = move_toward(velocity.x, direction * SPEED, ACCELERATION * delta)
@@ -2876,11 +2900,11 @@ func update_animation():
         sprite.flip_h = true
     
     if not is_on_floor():
-        sprite.play("jump")
+		sprite.play("jump")
     elif abs(velocity.x) > 10:
-        sprite.play("run")
+		sprite.play("run")
     else:
-        sprite.play("idle")
+		sprite.play("idle")
 
 func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO):
     # Handle damage
@@ -2913,7 +2937,7 @@ func _input(event):
 
 func check_drop_zone():
     # Check if dropped in valid zone
-    var zones = get_tree().get_nodes_in_group("drop_zones")
+	var zones = get_tree().get_nodes_in_group("drop_zones")
     for zone in zones:
         if zone.get_rect().has_point(global_position):
             snap_to_zone(zone)
@@ -2936,13 +2960,13 @@ func _input(event):
     if is_moving:
         return
     
-    if Input.is_action_just_pressed("move_up"):
+	if Input.is_action_just_pressed("move_up"):
         try_move(Vector2i(0, -1))
-    elif Input.is_action_just_pressed("move_down"):
+	elif Input.is_action_just_pressed("move_down"):
         try_move(Vector2i(0, 1))
-    elif Input.is_action_just_pressed("move_left"):
+	elif Input.is_action_just_pressed("move_left"):
         try_move(Vector2i(-1, 0))
-    elif Input.is_action_just_pressed("move_right"):
+	elif Input.is_action_just_pressed("move_right"):
         try_move(Vector2i(1, 0))
 
 func try_move(direction: Vector2i):
@@ -2959,7 +2983,7 @@ func move_to_grid_position():
     is_moving = true
     var target = Vector2(grid_position) * TILE_SIZE
     var tween = create_tween()
-    tween.tween_property(self, "position", target, 0.15)
+	tween.tween_property(self, "position", target, 0.15)
     tween.tween_callback(func(): is_moving = false)
 ```
 
@@ -3095,8 +3119,52 @@ collision_shape.shape = shape
 ```
 
 ### Visual Terrain (MeshInstance3D)
-Godot 4 doesn't have a built-in "Terrain" node.
-Use a `MeshInstance3D` with a `PlaneMesh` and a `ShaderMaterial`, or generate an `ArrayMesh` via code (SurfaceTool).
+Godot 4 doesn't have a built-in "Terrain" node. Use `SurfaceTool` to generate an `ArrayMesh`.
+
+**CRITICAL: Smooth Shading**
+To avoid flat-shaded/faceted terrain, you MUST use **shared vertices** and an index array.
+
+```gdscript
+var vertices = PackedVector3Array()
+var indices = PackedInt32Array()
+var size = 64
+
+# 1. Create Shared Vertices Grid
+for z in range(size + 1):
+	for x in range(size + 1):
+		var h = get_height(x, z)
+		vertices.append(Vector3(x, h, z))
+
+# 2. Create Triangles (referencing vertex indices)
+for z in range(size):
+	for x in range(size):
+		var tl = z * (size + 1) + x
+		var tr = tl + 1
+		var bl = (z + 1) * (size + 1) + x
+		var br = bl + 1
+		
+		# Quad -> 2 Triangles
+		indices.append_array([tl, bl, tr, tr, bl, br])
+
+# 3. Build Mesh with Normals
+var arr_mesh = ArrayMesh.new()
+var arrays = []
+arrays.resize(Mesh.ARRAY_MAX)
+arrays[Mesh.ARRAY_VERTEX] = vertices
+arrays[Mesh.ARRAY_INDEX] = indices
+arr_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
+# 4. Generate Smooth Normals
+var st = SurfaceTool.new()
+st.create_from(arr_mesh, 0)
+st.generate_normals()
+var final_mesh = st.commit()
+```
+
+**Noise Tips:**
+- Use `FastNoiseLite.TYPE_SIMPLEX_SMOOTH`.
+- Frequency `0.01` - `0.02` creates realistic large hills.
+- Frequency `0.05+` creates spiky, unusable noise.
 
 ### Using FastNoiseLite
 ```gdscript
