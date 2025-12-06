@@ -136,7 +136,7 @@ Save the player's score and level to a JSON file
 
 ---
 
-## 🛠️ Available Tools (72 Total)
+## 🛠️ Available Tools (77 Total)
 
 <details>
 <summary><b>Scene Management (12)</b></summary>
@@ -145,7 +145,7 @@ Save the player's score and level to a JSON file
 |------|-------------|
 | `godot_status` | Check connection |
 | `godot_get_scene_tree` | Get scene hierarchy |
-| `godot_save_scene` | Save current scene |
+| `godot_save_scene` | Save current scene (with `ignore_safety` option) |
 | `godot_new_scene` | Create new scene |
 | `godot_open_scene` | Open existing scene |
 | `godot_get_scene_file_content` | Get .tscn raw content |
@@ -167,6 +167,8 @@ Save the player's score and level to a JSON file
 | `godot_delete_node` | Remove node |
 | `godot_get_node_details` | Inspect properties |
 | `godot_set_property` | Modify property |
+| `godot_set_collision_layer` | Set collision layer/mask |
+| `godot_move_node` | Change node Z-order/index |
 | `godot_rename_node` | Rename node |
 | `godot_duplicate_node` | Clone node |
 | `godot_reparent_node` | Move in hierarchy |
@@ -223,7 +225,9 @@ Save the player's score and level to a JSON file
 | `godot_execute_code` | Run GDScript |
 | `godot_create_shader` | Create .gdshader |
 | `godot_apply_shader` | Apply to mesh |
+| `godot_set_shader_param` | Set shader uniform |
 | `godot_edit_file` | Find/replace in file |
+| `godot_write_binary_file` | Upload binary files (images, etc.) |
 
 </details>
 
@@ -271,6 +275,7 @@ Save the player's score and level to a JSON file
 | `godot_get_editor_screenshot` | Capture editor |
 | `godot_get_game_screenshot` | Capture game |
 | `godot_list_resources` | Browse res:// |
+| `godot_file_exists` | Check file existence |
 | `godot_create_folder` | Create directory |
 | `godot_search_files` | Find files |
 | `godot_uid` | Convert UID↔path |
@@ -286,7 +291,7 @@ Save the player's score and level to a JSON file
 
 ## 📚 Documentation
 
-The `godot_project/AI_GUIDELINES.md` file contains **3300+ lines** of comprehensive documentation covering:
+The `godot_project/AI_GUIDELINES.md` file contains **3400+ lines** of comprehensive documentation covering:
 
 - ✅ All Godot 4 node types and their usage
 - ✅ Physics system and collision layers
@@ -328,8 +333,7 @@ godot-matrix/
 │
 ├── godot_project/           # Godot 4.5+ project
 │   ├── project.godot        # Project config
-│   ├── .cursorrules         # Godot-specific AI rules
-│   ├── AI_GUIDELINES.md     # Comprehensive AI docs (3300+ lines)
+│   ├── AI_GUIDELINES.md     # Comprehensive AI docs (3400+ lines)
 │   └── addons/
 │       └── mcp_bridge/      # The MCP plugin
 │           ├── plugin.cfg   # Plugin config
@@ -337,7 +341,7 @@ godot-matrix/
 │           └── server.gd    # TCP server (2800+ lines)
 │
 └── mcp_server/              # Python MCP server
-    ├── server.py            # FastMCP server (1100+ lines)
+    ├── server.py            # FastMCP server (1500+ lines)
     └── requirements.txt     # Python dependencies
 ```
 
